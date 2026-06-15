@@ -60,6 +60,7 @@ from backend.services.target_user_service import TargetUserService
 from backend.services.user_service import UserService
 from backend.services.video_adapter import VideoAnalysisAdapter
 from backend.services.video_bridge_service import VideoBridgeService
+from backend.services.vision_service_client import VisionServiceClient
 from backend.services.warning_service import WarningService
 from backend.services.websocket_manager import WebSocketManager
 from backend.schemas.health import VitalSignsPayload
@@ -171,6 +172,7 @@ _posture_knowledge_service: PostureKnowledgeService | None = None
 _target_user_fall_service: TargetUserFallService | None = None
 _external_camera_bridge_service: ExternalCameraBridgeService | None = None
 _video_bridge_service: VideoBridgeService | None = None
+_vision_service_client: VisionServiceClient | None = None
 _model_finetune_service: ModelFinetuneService | None = None
 _camera_frame_hub: CameraFrameHub | None = None
 _camera_detection_frame_hub: CameraDetectionFrameHub | None = None
@@ -514,6 +516,17 @@ def get_video_bridge_service() -> VideoBridgeService:
             alarm_ingest_callback=_ingest_video_bridge_alarm_event,
         )
     return _video_bridge_service
+
+
+def get_vision_service_client() -> VisionServiceClient:
+    global _vision_service_client
+    if _vision_service_client is None:
+        _vision_service_client = VisionServiceClient(
+            base_url=_settings.vision_service_base_url,
+            default_camera_id=_settings.vision_service_camera_id,
+            timeout=_settings.vision_service_timeout_seconds,
+        )
+    return _vision_service_client
 
 
 def get_model_finetune_service() -> ModelFinetuneService:

@@ -26,6 +26,7 @@ from backend.api.relation_api import router as relation_router
 from backend.api.target_user_api import router as target_user_router
 from backend.api.user_api import router as user_router
 from backend.api.video_bridge_api import router as video_bridge_router
+from backend.api.vision_api import router as vision_router
 from backend.api.voice_api import router as voice_router
 from backend.api.omni_api import router as omni_router
 from backend.config import get_settings
@@ -141,6 +142,7 @@ app.include_router(voice_router, prefix=settings.api_v1_prefix)
 app.include_router(omni_router, prefix=settings.api_v1_prefix)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(video_bridge_router, prefix=settings.api_v1_prefix)
+app.include_router(vision_router, prefix=settings.api_v1_prefix)
 app.include_router(model_finetune_router, prefix=settings.api_v1_prefix)
 
 
