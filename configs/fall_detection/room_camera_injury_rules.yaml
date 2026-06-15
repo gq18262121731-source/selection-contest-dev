@@ -1,0 +1,51 @@
+observation:
+  post_fall_observe_seconds: 180.0
+  min_recovery_watch_seconds: 24.0
+  short_recovery_seconds: 6.0
+  delayed_recovery_seconds: 18.0
+  difficult_recovery_seconds: 45.0
+  emergency_down_seconds: 90.0
+  emergency_immobile_seconds: 60.0
+
+mobility:
+  low_speed: 0.016
+  very_low_speed: 0.007
+  unstable_sway: 0.04
+  severe_sway: 0.07
+  limp_asymmetry: 0.35
+  severe_limp_asymmetry: 0.55
+  limp_min_motion: 0.006
+  abnormal_score_i2: 0.38
+  abnormal_score_i3: 0.58
+  abnormal_score_i4: 0.78
+
+levels:
+  I0: no_fall_or_no_injury
+  I1: suspected_or_near_fall_observation
+  I2: minor_injury_risk
+  I3: moderate_injury_risk
+  I4: major_injury_or_emergency_risk
+  I5: life_threatening_or_death
+
+level_basis:
+  standard_family: "NDNQI/AHRQ-style fall injury outcome categories"
+  clinical_note: "Operational triage only. The system estimates risk from video evidence and must not claim a medical diagnosis."
+  mapping:
+    I0:
+      label_zh: "无跌倒或无可见伤害"
+      standard_mapping: "none/no apparent injury"
+    I1:
+      label_zh: "疑似跌倒或近失事件，待观察"
+      standard_mapping: "system-specific pre-injury/near-fall triage level"
+    I2:
+      label_zh: "轻度损伤风险"
+      standard_mapping: "minor injury"
+    I3:
+      label_zh: "中度损伤风险"
+      standard_mapping: "moderate injury"
+    I4:
+      label_zh: "重度损伤或急救评估风险"
+      standard_mapping: "major injury"
+    I5:
+      label_zh: "生命危急或死亡"
+      standard_mapping: "death/life-threatening outcome"

@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>目标用户管理与匹配测试</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef3f8;
+      --panel: rgba(255, 255, 255, 0.96);
+      --line: #d4deea;
+      --text: #162433;
+      --muted: #627487;
+      --blue: #155cff;
+      --blue-soft: #e7efff;
+      --green: #17784a;
+      --green-soft: #e7f7ef;
+      --amber: #a76000;
+      --amber-soft: #fff0dd;
+      --red: #b81f35;
+      --red-soft: #ffebef;
+      --shadow: 0 18px 36px rgba(17, 34, 52, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(21, 92, 255, 0.08), transparent 30%),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .page {
+      width: min(1380px, calc(100vw - 24px));
+      margin: 16px auto 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero, .panel { padding: 20px 22px; }
+
+    .hero-top, .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow, .chip, .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #f6f9fc;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .eyebrow {
+      background: var(--blue-soft);
+      color: var(--blue);
+      letter-spacing: 0.04em;
+    }
+
+    h1 {
+      margin: 14px 0 10px;
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.05;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .chips, .actions, .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    }
+
+    .section-title {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .section-title strong {
+      font-size: 18px;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field--full {
+      grid-column: 1 / -1;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    input, textarea, button {
+      font: inherit;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fbfdff;
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .dropzone {
+      border: 1px dashed #b7c7d8;
+      border-radius: 14px;
+      background: #f8fbfe;
+      padding: 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .btn {
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 0;
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform 0.16s ease, opacity 0.16s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-primary { background: linear-gradient(135deg, #155cff 0%, #083ea9 100%); color: #fff; }
+    .btn-secondary { background: #edf3f8; color: var(--text); }
+    .btn-danger { background: linear-gradient(135deg, #cf2d44 0%, #941222 100%); color: #fff; }
+
+    .status-box, .match-card, .user-card, .empty-box, .file-item, .live-stage {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8fbfd;
+      padding: 14px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .status-box.ok, .match-card.target {
+      background: var(--green-soft);
+      border-color: #b7e2c6;
+    }
+
+    .status-box.warn, .match-card.non-target {
+      background: var(--amber-soft);
+      border-color: #f0d0a0;
+    }
+
+    .status-box.error, .match-card.unknown {
+      background: var(--red-soft);
+      border-color: #efbbc4;
+    }
+
+    .status-box small, .match-card small, .user-card small, .empty-box small, .file-item small {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    .match-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .score-list, .user-list, .file-list, .live-grid, .live-stage-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .live-grid {
+      gap: 16px;
+    }
+
+    .live-stage-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .live-stage {
+      position: relative;
+      overflow: hidden;
+      min-height: 320px;
+      aspect-ratio: 16 / 10;
+      padding: 0;
+      background: #09131d;
+      border-radius: 16px;
+    }
+
+    .live-stage img,
+    .live-stage video,
+    .live-stage canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      object-position: center center;
+      background: #09131d;
+    }
+
+    .live-overlay-text {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: #e8f0f7;
+      font-size: 16px;
+      font-weight: 800;
+      background: rgba(9, 19, 29, 0.52);
+      pointer-events: none;
+    }
+
+    .score-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 82px minmax(0, 1fr) 64px;
+      align-items: center;
+      font-weight: 800;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #dee8f1;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #1fa35d 0%, #ff9f15 55%, #d62841 100%);
+    }
+
+    .user-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .error-box {
+      border: 1px solid #efbbc4;
+      background: #fff0f3;
+      color: var(--red);
+      border-radius: 14px;
+      padding: 14px;
+      white-space: pre-line;
+    }
+
+    @media (max-width: 1080px) {
+      .grid, .match-grid, .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow">目标用户定向识别控制台</div>
+          <h1>上传、管理并验证目标用户</h1>
+          <p>这张页面专门负责目标用户管理与匹配验证。先把目标用户录入成功，再把“只检测目标用户”的逻辑接回实时跌倒检测链。</p>
+        </div>
+        <div class="chips">
+          <div id="apiChip" class="chip">API: 检查中</div>
+          <div id="faceModelChip" class="chip">Face Model: 检查中</div>
+          <div id="userCountChip" class="chip">目标用户: 0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <section class="panel">
+        <div class="section-title">
+          <strong>新增目标用户</strong>
+          <span>建议上传 3-5 张清晰照片：正脸、半身、轻侧脸、全身站立照。这样人脸和体态特征都更容易提取成功。</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="displayNameInput">姓名</label>
+            <input id="displayNameInput" type="text" placeholder="例如：张三">
+          </div>
+          <div class="field">
+            <label for="groupInput">分组</label>
+            <input id="groupInput" type="text" value="default" placeholder="例如：VIP / 员工 / 需关注对象">
+          </div>
+          <div class="field field--full">
+            <label for="noteInput">备注</label>
+            <textarea id="noteInput" placeholder="可选：填写该目标用户的说明"></textarea>
+          </div>
+          <div class="field field--full">
+            <label for="photoInput">目标用户照片</label>
+            <div class="dropzone">
+              <input id="photoInput" type="file" multiple accept=".jpg,.jpeg,.png,.webp">
+              <div class="file-list" id="photoFileList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="createUserBtn" class="btn btn-primary" type="button">上传并注册目标用户</button>
+          <button id="refreshUsersBtn" class="btn btn-secondary" type="button">刷新目标用户列表</button>
+        </div>
+
+        <div id="createStatusBox" class="status-box">
+          <strong>尚未提交目标用户</strong>
+          <small>注册成功后，这里会显示新目标用户的照片数、特征数和警告信息。</small>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <strong>单图链路验证</strong>
+          <span>上传一张测试图，一次性看到：是否命中目标用户、是否继续执行跌倒检测、最终跌倒结果以及 face/body/fused score。</span>
+        </div>
+
+        <div class="field field--full">
+          <label for="matchInput">测试图片</label>
+          <div class="dropzone">
+            <input id="matchInput" type="file" accept=".jpg,.jpeg,.png,.webp">
+            <div class="file-list" id="matchFileList"></div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="matchBtn" class="btn btn-primary" type="button">执行目标匹配测试</button>
+          <button id="fallDetectBtn" class="btn btn-secondary" type="button">执行目标用户跌倒检测</button>
+        </div>
+
+        <div id="matchStatusCard" class="match-card unknown">
+          <strong>尚未执行匹配测试</strong>
+          <small>匹配后会显示是目标用户、非目标用户还是未知，以及最终决策分数。</small>
+        </div>
+
+        <div class="match-grid">
+          <div class="status-box">
+            <strong id="faceScoreText">0.00</strong>
+            <small>Face Score</small>
+          </div>
+          <div class="status-box">
+            <strong id="bodyScoreText">0.00</strong>
+            <small>Body Score</small>
+          </div>
+          <div class="status-box">
+            <strong id="fusedScoreText">0.00</strong>
+            <small>Fused Score</small>
+          </div>
+        </div>
+
+        <div id="fallChainCard" class="match-card unknown">
+          <strong>尚未执行目标用户跌倒检测</strong>
+          <small>执行后会显示：是否通过 target-only gate，以及最终跌倒检测状态。</small>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div class="section-title">
+          <strong>目标用户列表</strong>
+          <span>这里显示当前已经录入的目标用户，以及各自的人脸/体态特征数量。</span>
+        </div>
+      </div>
+      <div id="userList" class="user-list">
+        <div class="empty-box">
+          <strong>暂无目标用户</strong>
+          <small>请先在左侧上传照片并注册目标用户。</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <strong>实时摄像头 target-only 跌倒检测</strong>
+        <span>每帧先做目标用户匹配，命中目标用户才继续跌倒检测；非目标用户直接过滤。</span>
+      </div>
+
+      <div class="actions">
+        <button id="startCameraBtn" class="btn btn-primary" type="button">启动实时检测</button>
+        <button id="stopCameraBtn" class="btn btn-secondary" type="button">停止实时检测</button>
+        <label class="badge" for="targetOnlyToggle" style="gap:8px;">
+          <input id="targetOnlyToggle" type="checkbox" checked>
+          只检测目标用户
+        </label>
+      </div>
+
+      <div class="chips">
+        <span id="externalCameraChip" class="chip">外部摄像头: 未连接</span>
+        <span id="trackModeChip" class="chip">Track: 未启动</span>
+        <span id="roiModeChip" class="chip">ROI: 未启动</span>
+        <span id="failureChip" class="chip">失败原因: --</span>
+      </div>
+
+      <div class="live-grid">
+        <div class="live-stage-grid">
+          <div class="live-stage">
+            <img id="cameraVideo" alt="external camera live stream">
+            <div id="cameraPlaceholder" class="live-overlay-text">等待外部摄像头画面</div>
+          </div>
+          <div class="live-stage">
+            <canvas id="resultCanvas"></canvas>
+            <div id="resultPlaceholder" class="live-overlay-text">等待目标匹配与跌倒检测结果</div>
+          </div>
+        </div>
+
+        <div class="match-grid">
+          <div class="status-box">
+            <strong id="liveFaceScoreText">0.00</strong>
+            <small>Live Face Score</small>
+          </div>
+          <div class="status-box">
+            <strong id="liveBodyScoreText">0.00</strong>
+            <small>Live Body Score</small>
+          </div>
+          <div class="status-box">
+            <strong id="liveFusedScoreText">0.00</strong>
+            <small>Live Fused Score</small>
+          </div>
+        </div>
+
+        <div id="liveStatusCard" class="match-card unknown">
+          <strong>尚未启动实时检测</strong>
+          <small>启动后会从外部摄像头运行时拉取画面，并显示当前人物是否为目标用户、是否被 gate 放行，以及最终跌倒检测状态。</small>
+        </div>
+      </div>
+    </section>
+
+    <div id="globalErrorBox" class="error-box" hidden></div>
+  </main>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/api/v1";
+    const TARGET_USERS_URL = API_BASE + "/target-users";
+    const TARGET_USERS_STATUS_URL = API_BASE + "/target-users/status";
+    const TARGET_USERS_MATCH_URL = API_BASE + "/target-users/match";
+    const TARGET_USERS_FALL_URL = API_BASE + "/target-users/fall-detect?mode=metadata&target_only=true";
+    const EXTERNAL_CAMERA_HEALTH_URL = API_BASE + "/target-users/external-camera/health";
+    const EXTERNAL_CAMERA_FALL_URL = API_BASE + "/target-users/external-camera/fall-detect?mode=metadata";
+    const LIVE_SESSION_ID = "target-user-console-" + Math.random().toString(36).slice(2, 10);
+    let liveBusy = false;
+    let liveRunning = false;
+    let liveRenderHandle = null;
+    let liveDetectHandle = null;
+    let lastLiveOverlay = null;
+    let lastLiveFrameSize = { width: 0, height: 0 };
+    let liveDetectIntervalMs = 220;
+    let liveViewerBaseUrl = "http://127.0.0.1:8090";
+    let liveMjpegUrl = "http://127.0.0.1:8090/api/v1/camera/stream.mjpg";
+
+    const ui = {
+      apiChip: document.getElementById("apiChip"),
+      faceModelChip: document.getElementById("faceModelChip"),
+      userCountChip: document.getElementById("userCountChip"),
+      displayNameInput: document.getElementById("displayNameInput"),
+      groupInput: document.getElementById("groupInput"),
+      noteInput: document.getElementById("noteInput"),
+      photoInput: document.getElementById("photoInput"),
+      photoFileList: document.getElementById("photoFileList"),
+      createUserBtn: document.getElementById("createUserBtn"),
+      refreshUsersBtn: document.getElementById("refreshUsersBtn"),
+      createStatusBox: document.getElementById("createStatusBox"),
+      matchInput: document.getElementById("matchInput"),
+      matchFileList: document.getElementById("matchFileList"),
+      matchBtn: document.getElementById("matchBtn"),
+      fallDetectBtn: document.getElementById("fallDetectBtn"),
+      matchStatusCard: document.getElementById("matchStatusCard"),
+      fallChainCard: document.getElementById("fallChainCard"),
+      faceScoreText: document.getElementById("faceScoreText"),
+      bodyScoreText: document.getElementById("bodyScoreText"),
+      fusedScoreText: document.getElementById("fusedScoreText"),
+      userList: document.getElementById("userList"),
+      globalErrorBox: document.getElementById("globalErrorBox"),
+      startCameraBtn: document.getElementById("startCameraBtn"),
+      stopCameraBtn: document.getElementById("stopCameraBtn"),
+      targetOnlyToggle: document.getElementById("targetOnlyToggle"),
+      cameraVideo: document.getElementById("cameraVideo"),
+      cameraPlaceholder: document.getElementById("cameraPlaceholder"),
+      resultCanvas: document.getElementById("resultCanvas"),
+      resultPlaceholder: document.getElementById("resultPlaceholder"),
+      liveFaceScoreText: document.getElementById("liveFaceScoreText"),
+      liveBodyScoreText: document.getElementById("liveBodyScoreText"),
+      liveFusedScoreText: document.getElementById("liveFusedScoreText"),
+      liveStatusCard: document.getElementById("liveStatusCard"),
+      externalCameraChip: document.getElementById("externalCameraChip"),
+      trackModeChip: document.getElementById("trackModeChip"),
+      roiModeChip: document.getElementById("roiModeChip"),
+      failureChip: document.getElementById("failureChip"),
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatScore(value) {
+      return (Number(value) || 0).toFixed(2);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function setGlobalError(message) {
+      if (!message) {
+        ui.globalErrorBox.hidden = true;
+        ui.globalErrorBox.textContent = "";
+        return;
+      }
+      ui.globalErrorBox.hidden = false;
+      ui.globalErrorBox.textContent = message;
+    }
+
+    function humanizeError(detail) {
+      const text = String(detail || "").trim();
+      if (!text) return "发生未知错误。";
+      if (text.includes("TARGET_USER_IMAGES_REQUIRED")) return "请先选择目标用户照片。";
+      if (text.includes("TARGET_USER_DISPLAY_NAME_REQUIRED")) return "请填写目标用户姓名。";
+      if (text.includes("TARGET_USER_ALREADY_EXISTS")) return "同名同分组的目标用户已经存在，请不要重复注册。";
+      if (text.includes("TARGET_USER_NO_VALID_FEATURES")) return "上传的照片未提取到有效人脸或体态特征，请换更清晰、更完整的人像照片。";
+      if (text.includes("UNSUPPORTED_IMAGE_FORMAT")) return "上传的文件格式不支持，请使用 jpg、png 或 webp。";
+      if (text.includes("TARGET_USER_NOT_FOUND")) return "目标用户不存在，可能已被删除。";
+      return text;
+    }
+
+    function renderSelectedFiles(input, container) {
+      const files = Array.from(input.files || []);
+      if (!files.length) {
+        container.innerHTML = '<div class="empty-box"><small>尚未选择文件</small></div>';
+        return;
+      }
+      container.innerHTML = files.map((file) => (
+        '<div class="file-item"><strong>' + escapeHtml(file.name) + '</strong><small>' + Math.round(file.size / 1024) + ' KB</small></div>'
+      )).join("");
+    }
+
+    async function requestJson(url, init) {
+      const response = await fetch(url, init);
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok) {
+        const detail = payload && payload.detail ? payload.detail : ('HTTP ' + response.status);
+        throw new Error(humanizeError(detail));
+      }
+      return payload;
+    }
+
+    async function refreshStatus() {
+      try {
+        const payload = await requestJson(TARGET_USERS_STATUS_URL);
+        ui.apiChip.textContent = "API: 已连接";
+        const face = payload.face_model || {};
+        const faceText = [
+          "Face Model:",
+          face.yunet_available ? "YuNet" : "YuNet-未就绪",
+          "/",
+          face.sface_available ? "SFace" : "SFace-未就绪",
+          "/",
+          face.fallback_haar_available ? "Haar兜底" : "无兜底",
+        ].join(" ");
+        ui.faceModelChip.textContent = faceText;
+        ui.userCountChip.textContent = "目标用户: " + (payload.user_count || 0);
+        setGlobalError("");
+      } catch (error) {
+        ui.apiChip.textContent = "API: 不可达";
+        ui.faceModelChip.textContent = "Face Model: 未知";
+        setGlobalError(error instanceof Error ? error.message : "状态查询失败");
+      }
+    }
+
+    async function refreshUsers() {
+      try {
+        const users = await requestJson(TARGET_USERS_URL);
+        if (!users.length) {
+          ui.userList.innerHTML = '<div class="empty-box"><strong>暂无目标用户</strong><small>请先上传照片并注册目标用户。</small></div>';
+          return;
+        }
+        ui.userList.innerHTML = users.map((user) => {
+          return [
+            '<div class="user-card">',
+            '<div class="user-head">',
+            '<strong>' + escapeHtml(user.display_name) + '</strong>',
+            '<div class="actions"><span class="badge ' + (user.enabled ? 'normal' : 'warn') + '">' + (user.enabled ? '启用中' : '已停用') + '</span>',
+            '<button class="btn btn-danger" type="button" data-delete-id="' + escapeHtml(user.id) + '">删除</button></div>',
+            '</div>',
+            '<small>ID: ' + escapeHtml(user.id) + '</small>',
+            '<small>分组: ' + escapeHtml(user.group) + ' · 照片数: ' + (user.photo_count || 0) + ' · 人脸特征: ' + (user.face_embedding_count || 0) + ' · 体态特征: ' + (user.body_profile_count || 0) + '</small>',
+            '<small>备注: ' + escapeHtml(user.note || '') + '</small>',
+            '</div>'
+          ].join("");
+        }).join("");
+      } catch (error) {
+        setGlobalError(error instanceof Error ? error.message : "用户列表读取失败");
+      }
+    }
+
+    async function createUser() {
+      const files = Array.from(ui.photoInput.files || []);
+      if (!files.length) {
+        setGlobalError("请先选择目标用户照片。");
+        return;
+      }
+      const displayName = ui.displayNameInput.value.trim();
+      if (!displayName) {
+        setGlobalError("请填写目标用户姓名。");
+        return;
+      }
+
+      const form = new FormData();
+      form.append("display_name", displayName);
+      form.append("group", ui.groupInput.value.trim() || "default");
+      form.append("note", ui.noteInput.value.trim());
+      files.forEach((file) => form.append("files", file));
+
+      ui.createUserBtn.disabled = true;
+      try {
+        const payload = await requestJson(TARGET_USERS_URL, { method: "POST", body: form });
+        const user = payload.user || {};
+        const warnings = Array.isArray(payload.warnings) ? payload.warnings : [];
+        ui.createStatusBox.className = "status-box " + ((user.face_embedding_count || 0) > 0 ? "ok" : "warn");
+        ui.createStatusBox.innerHTML = [
+          '<strong>注册完成：' + escapeHtml(user.display_name || displayName) + '</strong>',
+          '<small>照片数: ' + (user.photo_count || 0) + ' · 人脸特征: ' + (user.face_embedding_count || 0) + ' · 体态特征: ' + (user.body_profile_count || 0) + '</small>',
+          '<small>警告: ' + (warnings.length ? warnings.map(escapeHtml).join(' / ') : '无') + '</small>',
+        ].join("");
+        ui.photoInput.value = "";
+        renderSelectedFiles(ui.photoInput, ui.photoFileList);
+        await refreshStatus();
+        await refreshUsers();
+        setGlobalError("");
+      } catch (error) {
+        setGlobalError(error instanceof Error ? error.message : "注册失败");
+      } finally {
+        ui.createUserBtn.disabled = false;
+      }
+    }
+
+    async function deleteUser(userId) {
+      try {
+        await requestJson(TARGET_USERS_URL + "/" + encodeURIComponent(userId), { method: "DELETE" });
+        await refreshStatus();
+        await refreshUsers();
+        setGlobalError("");
+      } catch (error) {
+        setGlobalError(error instanceof Error ? error.message : "删除失败");
+      }
+    }
+
+    async function runMatch() {
+      const file = (ui.matchInput.files || [])[0];
+      if (!file) {
+        setGlobalError("请先选择一张测试图片。");
+        return;
+      }
+      const form = new FormData();
+      form.append("file", file);
+      ui.matchBtn.disabled = true;
+      try {
+        const payload = await requestJson(TARGET_USERS_MATCH_URL, { method: "POST", body: form });
+        const matched = Boolean(payload.matched);
+        const decision = payload.decision || "unknown";
+        const css = matched ? "target" : (decision === "non_target" ? "non-target" : "unknown");
+        ui.matchStatusCard.className = "match-card " + css;
+        ui.matchStatusCard.innerHTML = [
+          '<strong>' + (matched ? ('命中目标用户：' + escapeHtml(payload.display_name || payload.user_id || '')) : '未命中目标用户') + '</strong>',
+          '<small>决策: ' + escapeHtml(decision) + '</small>',
+        ].join("");
+        ui.faceScoreText.textContent = formatScore(payload.face_score);
+        ui.bodyScoreText.textContent = formatScore(payload.body_score);
+        ui.fusedScoreText.textContent = formatScore(payload.fused_score);
+        setGlobalError("");
+      } catch (error) {
+        setGlobalError(error instanceof Error ? error.message : "匹配失败");
+      } finally {
+        ui.matchBtn.disabled = false;
+      }
+    }
+
+    async function runTargetFallDetect() {
+      const file = (ui.matchInput.files || [])[0];
+      if (!file) {
+        setGlobalError("请先选择一张测试图片。");
+        return;
+      }
+      const form = new FormData();
+      form.append("file", file);
+      ui.fallDetectBtn.disabled = true;
+      try {
+        const payload = await requestJson(TARGET_USERS_FALL_URL, { method: "POST", body: form });
+        const match = payload.target_match || {};
+        const fall = payload.fall_result || {};
+        const decision = match.decision || "unknown";
+        const status = payload.status || "unknown";
+
+        ui.faceScoreText.textContent = formatScore(match.face_score);
+        ui.bodyScoreText.textContent = formatScore(match.body_score);
+        ui.fusedScoreText.textContent = formatScore(match.fused_score);
+
+        const css =
+          status === "filtered_non_target"
+            ? "non-target"
+            : status === "model_unavailable"
+              ? "unknown"
+              : (fall.status === "fall" || fall.status === "danger" || fall.status === "critical")
+                ? "target"
+                : "warn";
+        const title = match.matched
+          ? ("命中目标用户：" + escapeHtml(match.display_name || match.user_id || ""))
+          : (status === "filtered_non_target" ? "非目标用户，已过滤" : "未命中目标用户");
+        const summary = status === "filtered_non_target"
+          ? "target-only gate 已拦截，未继续执行跌倒检测。"
+          : ("跌倒检测状态：" + escapeHtml(fall.status || status));
+
+        ui.fallChainCard.className = "match-card " + css;
+        ui.fallChainCard.innerHTML = [
+          '<strong>' + title + '</strong>',
+          '<small>匹配决策: ' + escapeHtml(decision) + ' · Gate结果: ' + escapeHtml(status) + '</small>',
+          '<small>' + summary + '</small>',
+        ].join("");
+        setGlobalError("");
+      } catch (error) {
+        setGlobalError(error instanceof Error ? error.message : "目标用户跌倒检测失败");
+      } finally {
+        ui.fallDetectBtn.disabled = false;
+      }
+    }
+
+    async function startLiveCamera() {
+      stopLiveCamera();
+      try {
+        const health = await requestJson(EXTERNAL_CAMERA_HEALTH_URL);
+        liveViewerBaseUrl = String((health && health.viewer_url) || "http://127.0.0.1:8090/viewer").replace(/\/viewer$/, "");
+        liveMjpegUrl = String((health && health.mjpeg_url) || (liveViewerBaseUrl + "/api/v1/camera/stream.mjpg"));
+        liveBusy = false;
+        liveRunning = true;
+        liveDetectIntervalMs = 220;
+        lastLiveOverlay = null;
+        lastLiveFrameSize = { width: 1280, height: 720 };
+        ui.cameraVideo.src = liveMjpegUrl + (liveMjpegUrl.includes("?") ? "&" : "?") + "ts=" + Date.now();
+        ui.cameraPlaceholder.style.display = "none";
+        ui.resultPlaceholder.style.display = "none";
+        ui.externalCameraChip.textContent = "外部摄像头: 已连接";
+        ui.trackModeChip.textContent = "Track: 已启动";
+        ui.roiModeChip.textContent = "ROI: 已启动";
+        ui.failureChip.textContent = "失败原因: --";
+        ui.liveStatusCard.className = "match-card warn";
+        ui.liveStatusCard.innerHTML = '<strong>外部摄像头实时检测已启动</strong><small>当前使用 8090 摄像头运行时作为视频源，并持续执行 target-only 跌倒检测。</small>';
+        renderLiveResultFrame();
+        scheduleLiveDetect();
+      } catch (error) {
+        ui.externalCameraChip.textContent = "外部摄像头: 不可达";
+        ui.trackModeChip.textContent = "Track: 未启动";
+        ui.roiModeChip.textContent = "ROI: 未启动";
+        ui.failureChip.textContent = "失败原因: 外部摄像头不可达";
+        setGlobalError(error instanceof Error ? error.message : "启动外部摄像头检测失败");
+      }
+    }
+
+    function stopLiveCamera() {
+      liveRunning = false;
+      liveBusy = false;
+      if (liveDetectHandle) {
+        window.clearTimeout(liveDetectHandle);
+        liveDetectHandle = null;
+      }
+      if (liveRenderHandle) {
+        cancelAnimationFrame(liveRenderHandle);
+        liveRenderHandle = null;
+      }
+      lastLiveOverlay = null;
+      lastLiveFrameSize = { width: 0, height: 0 };
+      if (ui.cameraVideo) {
+        ui.cameraVideo.removeAttribute("src");
+      }
+      ui.cameraPlaceholder.style.display = "";
+      ui.resultPlaceholder.style.display = "";
+      const ctx = ui.resultCanvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, ui.resultCanvas.width, ui.resultCanvas.height);
+      }
+      ui.resultCanvas.width = 0;
+      ui.resultCanvas.height = 0;
+      ui.liveStatusCard.className = "match-card unknown";
+      ui.liveStatusCard.innerHTML = '<strong>尚未启动实时检测</strong><small>启动后会从外部摄像头运行时拉取画面，并显示当前人物是否为目标用户、是否被 gate 放行，以及最终跌倒检测状态。</small>';
+      ui.liveFaceScoreText.textContent = "0.00";
+      ui.liveBodyScoreText.textContent = "0.00";
+      ui.liveFusedScoreText.textContent = "0.00";
+      ui.externalCameraChip.textContent = "外部摄像头: 未连接";
+      ui.trackModeChip.textContent = "Track: 未启动";
+      ui.roiModeChip.textContent = "ROI: 未启动";
+      ui.failureChip.textContent = "失败原因: --";
+    }
+
+    function scheduleLiveDetect(delayMs = 0) {
+      if (!liveRunning) {
+        return;
+      }
+      if (liveDetectHandle) {
+        window.clearTimeout(liveDetectHandle);
+      }
+      liveDetectHandle = window.setTimeout(() => {
+        liveDetectHandle = null;
+        void runLiveDetect();
+      }, Math.max(0, delayMs));
+    }
+
+    function renderLiveResultFrame() {
+      if (!liveRunning) {
+        return;
+      }
+      const video = ui.cameraVideo;
+      const canvas = ui.resultCanvas;
+      const resultContext = canvas.getContext("2d");
+      const sourceWidth = Math.max(1, Number(lastLiveFrameSize.width) || 1280);
+      const sourceHeight = Math.max(1, Number(lastLiveFrameSize.height) || 720);
+      if (video && resultContext) {
+        if (canvas.width !== sourceWidth || canvas.height !== sourceHeight) {
+          canvas.width = sourceWidth;
+          canvas.height = sourceHeight;
+        }
+        resultContext.clearRect(0, 0, canvas.width, canvas.height);
+        try {
+          resultContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+        } catch {}
+
+        if (lastLiveOverlay && Array.isArray(lastLiveOverlay.detections)) {
+          const scaleX = canvas.width / sourceWidth;
+          const scaleY = canvas.height / sourceHeight;
+          resultContext.lineWidth = 3;
+          resultContext.font = "700 20px Microsoft YaHei";
+          lastLiveOverlay.detections.forEach((item) => {
+            const box = item.bbox || [];
+            const x1 = (Number(box[0]) || 0) * scaleX;
+            const y1 = (Number(box[1]) || 0) * scaleY;
+            const x2 = (Number(box[2]) || 0) * scaleX;
+            const y2 = (Number(box[3]) || 0) * scaleY;
+            const width = Math.max(1, x2 - x1);
+            const height = Math.max(1, y2 - y1);
+            const label = String(item.label || "target");
+            const color = label === "fall" || label === "fallen" ? "#d62841" : "#2f7df6";
+            resultContext.strokeStyle = color;
+            resultContext.fillStyle = color;
+            resultContext.strokeRect(x1, y1, width, height);
+            const text = `${label} ${(Number(item.confidence) || 0).toFixed(2)}`;
+            const textWidth = resultContext.measureText(text).width;
+            const textY = Math.max(0, y1 - 28);
+            resultContext.fillRect(x1, textY, textWidth + 16, 26);
+            resultContext.fillStyle = "#fff";
+            resultContext.fillText(text, x1 + 8, textY + 4);
+          });
+        }
+      }
+      liveRenderHandle = window.requestAnimationFrame(renderLiveResultFrame);
+    }
+
+    async function runLiveDetect() {
+      if (!liveRunning || liveBusy) {
+        return;
+      }
+      liveBusy = true;
+      const detectStartedAt = performance.now();
+      try {
+        const targetOnly = ui.targetOnlyToggle.checked ? "true" : "false";
+        const payload = await requestJson(EXTERNAL_CAMERA_FALL_URL + "&target_only=" + targetOnly + "&session_id=" + encodeURIComponent(LIVE_SESSION_ID), {
+          method: "POST",
+        });
+
+        const match = payload.target_match || {};
+        const fall = payload.fall_result || {};
+        const frameInfo = (fall && fall.frame) || {};
+        const tracking = payload.tracking || {};
+        const diagnostics = payload.diagnostics || {};
+        ui.liveFaceScoreText.textContent = formatScore(match.face_score);
+        ui.liveBodyScoreText.textContent = formatScore(match.body_score);
+        ui.liveFusedScoreText.textContent = formatScore(match.fused_score);
+        lastLiveOverlay = {
+          detections: (fall && fall.detections) || [],
+        };
+        lastLiveFrameSize = {
+          width: Number(frameInfo.width) || 1280,
+          height: Number(frameInfo.height) || 720,
+        };
+        ui.resultPlaceholder.style.display = "none";
+        const candidateCount = Number(tracking.candidate_count) || 0;
+        ui.trackModeChip.textContent = "Track: " + (tracking.used_track ? ("ID " + (tracking.track_id ?? "--") + " · 候选 " + candidateCount) : ("未锁定 · 候选 " + candidateCount));
+        ui.roiModeChip.textContent = "ROI: " + (tracking.roi && tracking.roi.used_roi ? "已启用" : "未启用");
+        const reasons = Array.isArray(diagnostics.reasons) ? diagnostics.reasons : [];
+        ui.failureChip.textContent = "失败原因: " + (reasons.length ? reasons.join(" / ") : "--");
+
+        const status = payload.status || "unknown";
+        const decision = match.decision || "unknown";
+        const title = match.matched
+          ? ("命中目标用户：" + escapeHtml(match.display_name || match.user_id || ""))
+          : (status === "filtered_non_target" ? "非目标用户，已过滤" : "未命中目标用户");
+        const latencyText = Number(payload.latency_ms) > 0 ? (" · 延迟约 " + Math.round(Number(payload.latency_ms)) + " ms") : "";
+        const summary = status === "filtered_non_target"
+          ? "target-only gate 已拦截，未继续执行跌倒检测。"
+          : ("跌倒检测状态：" + escapeHtml((fall && fall.status) || status) + latencyText);
+        const css =
+          status === "filtered_non_target"
+            ? "non-target"
+            : (fall && (fall.status === "fall" || fall.status === "suspected")) ? "target"
+            : "warn";
+
+        ui.liveStatusCard.className = "match-card " + css;
+        ui.liveStatusCard.innerHTML = [
+          '<strong>' + title + '</strong>',
+          '<small>匹配决策: ' + escapeHtml(decision) + ' · Gate结果: ' + escapeHtml(status) + ' · 检测节奏约 ' + Math.round(liveDetectIntervalMs) + ' ms</small>',
+          '<small>' + summary + '</small>',
+        ].join("");
+        setGlobalError("");
+      } catch (error) {
+        setGlobalError(error instanceof Error ? error.message : "实时检测失败");
+      } finally {
+        liveBusy = false;
+        const elapsed = performance.now() - detectStartedAt;
+        liveLastDetectAt = performance.now();
+        liveDetectIntervalMs = clamp(elapsed < 240 ? 120 : elapsed * 0.55, 120, 260);
+        if (liveRunning) {
+          scheduleLiveDetect(liveDetectIntervalMs);
+        }
+      }
+    }
+
+    ui.photoInput.addEventListener("change", () => renderSelectedFiles(ui.photoInput, ui.photoFileList));
+    ui.matchInput.addEventListener("change", () => renderSelectedFiles(ui.matchInput, ui.matchFileList));
+    ui.createUserBtn.addEventListener("click", () => void createUser());
+    ui.refreshUsersBtn.addEventListener("click", () => void refreshUsers());
+    ui.matchBtn.addEventListener("click", () => void runMatch());
+    ui.fallDetectBtn.addEventListener("click", () => void runTargetFallDetect());
+    ui.startCameraBtn.addEventListener("click", () => void startLiveCamera());
+    ui.stopCameraBtn.addEventListener("click", () => stopLiveCamera());
+    ui.userList.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const userId = target.getAttribute("data-delete-id");
+      if (userId) {
+        void deleteUser(userId);
+      }
+    });
+
+    renderSelectedFiles(ui.photoInput, ui.photoFileList);
+    renderSelectedFiles(ui.matchInput, ui.matchFileList);
+    void refreshStatus();
+    void refreshUsers();
+  </script>
+</body>
+</html>
