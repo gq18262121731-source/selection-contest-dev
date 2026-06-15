@@ -127,10 +127,13 @@ class T10PacketParser:
         uuid_bytes = payload[9:25]
         heart_rate = payload[25]
         blood_oxygen = payload[26]
-        temperature = round(int.from_bytes(payload[27:29], byteorder="big") / 100.0, 2)
+        raw_temperature = round(int.from_bytes(payload[27:29], byteorder="big") / 100.0, 2)
+        # Broadcast temperature may come from surface sensor depending on firmware.
+        # Only keep it as body temperature when it is physiologically plausible.
+        temperature = raw_temperature if 35.0 <= raw_temperature <= 45.0 else 0.0
         sos_value = payload[29] if len(payload) >= 30 else 0
         sos_trigger = self._decode_sos_trigger(sos_value)
-        sos_flag = sos_trigger is not None
+        sos_flag = sos_value != 0
 
         normalized_mac = self._normalize_mac(device_mac)
         return HealthSample(
@@ -145,6 +148,7 @@ class T10PacketParser:
             sos_trigger=sos_trigger,
             source=source,
             device_uuid=self._format_uuid(uuid_bytes),
+            surface_temperature=raw_temperature,
             packet_type=PacketKind.BROADCAST.value,
             raw_packet_a=payload.hex().upper(),
         )
@@ -316,10 +320,13 @@ class T10PacketParser:
 
     @staticmethod
     def _decode_sos_trigger(sos_value: int) -> str | None:
-        if sos_value == 0x01:
-            return "double_click"
-        if sos_value == 0x02:
+        # Some firmware revisions encode SOS in a bit-field where
+        # higher bits carry extra status flags (e.g. 0x81 / 0x82).
+        # Keep compatibility with strict values while accepting bitwise forms.
+        if sos_value & 0x02:
             return "long_press"
+        if sos_value & 0x01:
+            return "double_click"
         return None
 
     def _decode_legacy(

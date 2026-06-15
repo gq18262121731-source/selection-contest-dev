@@ -1,0 +1,397 @@
+{
+  "schema": "fall_replay_manifest_v1",
+  "model_root": "D:\\Program\\model\\fall_detection",
+  "source_manifest": "D:\\Program\\model\\fall_detection\\data_processed\\video_manifest_adapted.csv",
+  "counts": {
+    "total": 38,
+    "positive": 13,
+    "negative": 25
+  },
+  "entries": [
+    {
+      "id": "private_capture_fall_001",
+      "source": "C:\\Users\\YANG\\Videos\\Captures\\跌倒.mp4",
+      "dataset": "private_capture",
+      "split": "external",
+      "label": "fall_video",
+      "expected": "positive",
+      "video_key": "跌倒",
+      "notes": "local captured fall verification clip"
+    },
+    {
+      "id": "gmdcsa24_fall_001",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\01.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fall",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/01",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_fall_002",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\02.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fall",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/02",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_fall_003",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\03.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fall",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/03",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_fall_004",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\04.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fall",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/04",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "urfd_fall_video_005",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\urfd\\videos\\fall-01-cam1.mp4",
+      "dataset": "urfd",
+      "split": "external",
+      "label": "fall_video",
+      "expected": "positive",
+      "video_key": "fall-01-cam1",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "urfd_fall_video_006",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\urfd\\videos\\fall-02-cam1.mp4",
+      "dataset": "urfd",
+      "split": "external",
+      "label": "fall_video",
+      "expected": "positive",
+      "video_key": "fall-02-cam1",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "urfd_fall_video_007",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\urfd\\videos\\fall-03-cam1.mp4",
+      "dataset": "urfd",
+      "split": "external",
+      "label": "fall_video",
+      "expected": "positive",
+      "video_key": "fall-03-cam1",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "urfd_fall_video_008",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\urfd\\videos\\fall-04-cam1.mp4",
+      "dataset": "urfd",
+      "split": "external",
+      "label": "fall_video",
+      "expected": "positive",
+      "video_key": "fall-04-cam1",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_fallen_009",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\01.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fallen",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/01",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_fallen_010",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\02.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fallen",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/02",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_fallen_011",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\03.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fallen",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/03",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_fallen_012",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\04.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "fallen",
+      "expected": "positive",
+      "video_key": "Actor 4/Fall/04",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "urfd_adl_001",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\urfd\\videos\\adl-01-cam0.mp4",
+      "dataset": "urfd",
+      "split": "external",
+      "label": "adl",
+      "expected": "negative",
+      "video_key": "adl-01-cam0",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "urfd_adl_002",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\urfd\\videos\\adl-02-cam0.mp4",
+      "dataset": "urfd",
+      "split": "external",
+      "label": "adl",
+      "expected": "negative",
+      "video_key": "adl-02-cam0",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "urfd_adl_003",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\urfd\\videos\\adl-03-cam0.mp4",
+      "dataset": "urfd",
+      "split": "external",
+      "label": "adl",
+      "expected": "negative",
+      "video_key": "adl-03-cam0",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "private_scene_bending_004",
+      "source": "D:\\Program\\model\\fall_detection\\data_private\\camera_scene\\raw_videos\\private_scene_cam_3.mp4",
+      "dataset": "private_scene",
+      "split": "test",
+      "label": "bending",
+      "expected": "negative",
+      "video_key": "private_scene_cam_3",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_lie_down_005",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\10.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "lie_down",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/10",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_lie_down_006",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\15.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "lie_down",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/15",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_lie_down_007",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\16.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "lie_down",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/16",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_lying_008",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\10.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "lying",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/10",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_lying_009",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\15.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "lying",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/15",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_lying_010",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\16.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "lying",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/16",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_other_011",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\05.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "other",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/05",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_other_012",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\06.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "other",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/06",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_other_013",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\07.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "other",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/07",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_sit_down_014",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\03.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "sit_down",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/03",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_sit_down_015",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\16.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "sit_down",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/16",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_sit_down_016",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\18.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "sit_down",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/18",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_sitting_017",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\01.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "sitting",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/01",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_sitting_018",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\03.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "sitting",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/03",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_sitting_019",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\04.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "sitting",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/04",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_standing_020",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\14.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "standing",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/14",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_standing_021",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\Fall\\01.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "standing",
+      "expected": "negative",
+      "video_key": "Actor 4/Fall/01",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_standing_022",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 2\\ADL\\04.mp4",
+      "dataset": "gmdcsa24",
+      "split": "train",
+      "label": "standing",
+      "expected": "negative",
+      "video_key": "Actor 2/ADL/04",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_walk_023",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\02.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "walk",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/02",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_walk_024",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\05.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "walk",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/05",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    },
+    {
+      "id": "gmdcsa24_walk_025",
+      "source": "D:\\Program\\model\\fall_detection\\data_public\\gmdcsa24\\extracted\\ekramalam-GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-b5ac9f5\\Actor 4\\ADL\\06.mp4",
+      "dataset": "gmdcsa24",
+      "split": "test",
+      "label": "walk",
+      "expected": "negative",
+      "video_key": "Actor 4/ADL/06",
+      "notes": "auto-selected from video_manifest_adapted.csv"
+    }
+  ],
+  "notes": [
+    "Positive clips should produce at least one fall_confirmed.",
+    "Negative clips must not produce fall_confirmed; suspected_fall should be reviewed but is not automatically a failure.",
+    "Bilibili or other web videos should be used only with explicit permission or for non-training qualitative review."
+  ]
+}

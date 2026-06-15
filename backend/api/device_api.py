@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Header, HTTPException
 
-from backend.dependencies import get_device_service, require_session_user, require_write_session_user
+from backend.dependencies import (
+    get_alarm_service,
+    get_device_service,
+    get_health_data_repository,
+    get_websocket_manager,
+    require_session_user,
+    require_write_session_user,
+)
 from backend.models.auth_model import SessionUser
 from backend.models.device_bind_model import (
     DeviceBindLogRecord,
@@ -24,6 +31,23 @@ from backend.models.user_model import UserRole
 
 
 router = APIRouter(prefix="/devices", tags=["devices"])
+
+
+async def _clear_device_sos_guard(mac_address: str) -> None:
+    alarm_service = get_alarm_service()
+    cleared_alarm_ids = alarm_service.clear_device_sos_state(mac_address)
+    if not cleared_alarm_ids:
+        return
+    repository = get_health_data_repository()
+    for alarm_id in cleared_alarm_ids:
+        repository.acknowledge_alert(alarm_id)
+    await get_websocket_manager().broadcast_alarm_queue(
+        {
+            "type": "alarm_queue",
+            "queue": [item.model_dump(mode="json") for item in alarm_service.queue_items(active_only=True)],
+            "snapshot": alarm_service.queue_snapshot(),
+        }
+    )
 
 
 def _require_writer(authorization: str | None) -> SessionUser:
@@ -82,7 +106,9 @@ async def register_device(payload: DeviceRegisterRequest, authorization: str | N
 async def bind_device(payload: DeviceBindRequest, authorization: str | None = Header(default=None)) -> DeviceBindLogRecord:
     _require_writer(authorization)
     try:
-        return get_device_service().bind_device(payload)
+        await _clear_device_sos_guard(payload.mac_address)
+        result = get_device_service().bind_device(payload)
+        return result
     except ValueError as exc:
         code = str(exc)
         if code in {"DEVICE_NOT_FOUND", "USER_NOT_FOUND"}:
@@ -96,7 +122,9 @@ async def bind_device(payload: DeviceBindRequest, authorization: str | None = He
 async def unbind_device(payload: DeviceUnbindRequest, authorization: str | None = Header(default=None)) -> DeviceBindLogRecord:
     _require_writer(authorization)
     try:
-        return get_device_service().unbind_device(payload)
+        result = get_device_service().unbind_device(payload)
+        await _clear_device_sos_guard(payload.mac_address)
+        return result
     except ValueError as exc:
         code = str(exc)
         if code == "DEVICE_NOT_FOUND":
@@ -136,28 +164,32 @@ async def unbind_device_self(authorization: str | None = Header(default=None)) -
             if mac
         )
 
-    devices = get_device_service().list_devices()
+    device_service = get_device_service()
+    devices = device_service.list_devices()
+    serial_candidates = [
+        d
+        for d in devices
+        if d.ingest_mode == DeviceIngestMode.SERIAL
+        and d.bind_status == DeviceBindStatus.BOUND
+        and (d.user_id == user.id or d.mac_address.upper() in elder_macs)
+    ]
+    if not serial_candidates:
+        raise HTTPException(status_code=404, detail="NO_BOUND_SERIAL_DEVICE")
+
+    active_target_mac = (device_service.get_active_serial_target_mac() or "").upper()
     serial_device = next(
-        (
-            d for d in devices
-            if d.user_id == user.id
-            and d.ingest_mode == DeviceIngestMode.SERIAL
-            and d.bind_status == DeviceBindStatus.BOUND
-        ),
+        (d for d in serial_candidates if d.mac_address.upper() == active_target_mac),
         None,
     )
     if serial_device is None:
-        serial_device = next(
-            (
-                d for d in devices
-                if d.mac_address.upper() in elder_macs
-                and d.ingest_mode == DeviceIngestMode.SERIAL
-                and d.bind_status == DeviceBindStatus.BOUND
+        serial_device = sorted(
+            serial_candidates,
+            key=lambda d: (
+                d.last_seen_at or d.created_at,
+                d.created_at,
+                d.mac_address,
             ),
-            None,
-        )
-    if serial_device is None:
-        raise HTTPException(status_code=404, detail="NO_BOUND_SERIAL_DEVICE")
+        )[-1]
 
     payload = DeviceUnbindRequest(
         mac_address=serial_device.mac_address,
@@ -165,7 +197,9 @@ async def unbind_device_self(authorization: str | None = Header(default=None)) -
         reason="elder_self_unbind",
     )
     try:
-        return get_device_service().unbind_device(payload)
+        result = get_device_service().unbind_device(payload)
+        await _clear_device_sos_guard(payload.mac_address)
+        return result
     except ValueError as exc:
         code = str(exc)
         if code == "DEVICE_NOT_FOUND":
@@ -187,6 +221,7 @@ async def bind_device_self(
 
     try:
         if existing is None:
+            await _clear_device_sos_guard(payload.mac_address)
             register_payload: dict[str, object] = {
                 "mac_address": payload.mac_address,
                 "device_name": (payload.device_name or "T10-WATCH").strip() or "T10-WATCH",
@@ -198,12 +233,14 @@ async def bind_device_self(
                 register_payload["service_uuid"] = payload.service_uuid
             if payload.device_uuid:
                 register_payload["device_uuid"] = payload.device_uuid
-            return device_service.register_device(
+            created = device_service.register_device(
                 DeviceRegisterRequest(**register_payload),
                 operator_id=user.id,
             )
+            return created
 
         if existing.user_id == user.id and existing.bind_status == DeviceBindStatus.BOUND:
+            await _clear_device_sos_guard(existing.mac_address)
             if existing.ingest_mode == DeviceIngestMode.SERIAL:
                 try:
                     device_service.set_active_serial_target(existing.mac_address)
@@ -211,6 +248,7 @@ async def bind_device_self(
                     pass
             return existing
 
+        await _clear_device_sos_guard(existing.mac_address)
         device_service.bind_device(
             DeviceBindRequest(
                 mac_address=existing.mac_address,
@@ -241,7 +279,9 @@ async def bind_device_self(
 async def rebind_device(payload: DeviceRebindRequest, authorization: str | None = Header(default=None)) -> DeviceBindLogRecord:
     _require_writer(authorization)
     try:
-        return get_device_service().rebind_device(payload)
+        await _clear_device_sos_guard(payload.mac_address)
+        result = get_device_service().rebind_device(payload)
+        return result
     except ValueError as exc:
         code = str(exc)
         if code in {"DEVICE_NOT_FOUND", "USER_NOT_FOUND"}:

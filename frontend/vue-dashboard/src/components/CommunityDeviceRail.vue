@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import type { CommunityDashboardElderItem } from "../api/client";
 import { riskLevelToChinese } from "../utils/riskLevel";
@@ -27,8 +27,12 @@ function elderHasObservedRealtime(elder: CommunityDashboardElderItem) {
   );
 }
 
+function elderHasActiveSos(elder: CommunityDashboardElderItem) {
+  return elder.sos_active === true || Boolean(elder.active_sos_alarm_id);
+}
+
 function elderTone(elder: CommunityDashboardElderItem): CardTone {
-  if (elder.active_alarm_count > 0) return "sos";
+  if (elderHasActiveSos(elder)) return "sos";
   if (!elder.device_mac || elder.device_status === "no_device") return "no-device";
   if (elder.device_status === "offline") return "offline";
   if (elder.device_status === "pending" && !elderHasObservedRealtime(elder)) return "pending";
@@ -38,7 +42,7 @@ function elderTone(elder: CommunityDashboardElderItem): CardTone {
 }
 
 function elderLabel(elder: CommunityDashboardElderItem): string {
-  if (elder.active_alarm_count > 0) return "告警中";
+  if (elderHasActiveSos(elder)) return "告警中";
   if (!elder.device_mac || elder.device_status === "no_device") return "无设备";
   if (elder.device_status === "offline") return "离线";
   if (elder.device_status === "pending" && !elderHasObservedRealtime(elder)) return "待同步";
@@ -117,161 +121,254 @@ onMounted(() => {
 <style scoped>
 .device-rail {
   display: grid;
-  gap: 12px;
+  gap: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
 }
 
 .device-rail__head {
   display: flex;
   justify-content: space-between;
-  gap: 14px;
-  align-items: flex-end;
+  gap: 16px;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .device-rail__head h2 {
   margin: 0;
-  color: var(--text-main);
+  color: #0f172a;
   font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.device-rail__head small,
-.device-pill small,
+.device-rail__head small {
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  max-width: 480px;
+}
+
 .device-pill__meta {
-  color: var(--text-sub);
+  color: #64748b;
   font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .device-rail__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
 .device-rail__grid {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .device-pill {
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: 20px;
-  border: 1px solid var(--line-medium);
+  gap: 10px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 2px solid #e2e8f0;
   background: #ffffff;
   text-align: left;
   cursor: pointer;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all 200ms ease;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  position: relative;
+  overflow: hidden;
 }
 
-.device-pill:hover,
-.device-pill--active {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+.device-pill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.device-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
 }
 
 .device-pill--active {
-  border-color: var(--brand);
-  background: #eff6ff;
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.14), 0 14px 28px rgba(37, 99, 235, 0.12);
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 8px 20px rgba(59, 130, 246, 0.15);
+}
+
+.device-pill--active::before {
+  opacity: 1;
 }
 
 .device-pill__top {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
 }
 
 .device-pill strong {
-  color: var(--text-main);
-  font-size: 1rem;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.device-pill small {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: var(--font-mono);
 }
 
 .device-pill__state {
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   font-weight: 700;
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
+/* 状态样式 */
 .no-device {
-  border-color: var(--line-medium);
+  border-color: #e2e8f0;
   background: #f8fafc;
 }
 
 .no-device .device-pill__state {
-  background: rgba(148, 163, 184, 0.14);
+  background: #f1f5f9;
   color: #64748b;
+  border: 1px solid #cbd5e1;
 }
 
 .offline {
-  border-color: rgba(96, 165, 250, 0.24);
-  background: #f0f9ff;
+  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
 }
 
 .offline .device-pill__state {
-  background: rgba(56, 189, 248, 0.14);
-  color: #0284c7;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
 }
 
 .pending {
-  border-color: rgba(251, 191, 36, 0.3);
-  background: #fffbeb;
+  border-color: #fde68a;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
 }
 
 .pending .device-pill__state {
-  background: rgba(251, 191, 36, 0.18);
-  color: #b45309;
+  background: #fef08a;
+  color: #92400e;
+  border: 1px solid #fde047;
 }
 
 .sos {
-  border-color: rgba(239, 68, 68, 0.5);
-  background: #fef2f2;
-  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.24), 0 12px 28px rgba(239, 68, 68, 0.16);
+  border-color: #fca5a5;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1), 0 8px 20px rgba(239, 68, 68, 0.2);
+  animation: pulse-sos 2s infinite;
+}
+
+.sos::before {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+  opacity: 1;
 }
 
 .sos .device-pill__state {
-  background: rgba(239, 68, 68, 0.16);
-  color: #b91c1c;
+  background: #fecaca;
+  color: #991b1b;
+  border: 1px solid #f87171;
+  animation: pulse-state 2s infinite;
+}
+
+@keyframes pulse-sos {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1), 0 8px 20px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.15), 0 12px 28px rgba(239, 68, 68, 0.3);
+  }
+}
+
+@keyframes pulse-state {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .risk-high {
-  border-color: rgba(239, 68, 68, 0.3);
-  background: #fef2f2;
+  border-color: #fca5a5;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
 }
 
 .risk-high .device-pill__state {
-  background: rgba(239, 68, 68, 0.16);
-  color: #b91c1c;
+  background: #fecaca;
+  color: #991b1b;
+  border: 1px solid #f87171;
 }
 
 .risk-medium {
-  border-color: rgba(245, 158, 11, 0.3);
-  background: #fffbeb;
+  border-color: #fde68a;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
 }
 
 .risk-medium .device-pill__state {
-  background: rgba(245, 158, 11, 0.18);
-  color: #b45309;
+  background: #fef08a;
+  color: #92400e;
+  border: 1px solid #fde047;
 }
 
 .risk-low {
-  border-color: rgba(16, 185, 129, 0.24);
-  background: #f0fdf4;
+  border-color: #86efac;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
 }
 
 .risk-low .device-pill__state {
-  background: rgba(16, 185, 129, 0.14);
-  color: #047857;
+  background: #bbf7d0;
+  color: #14532d;
+  border: 1px solid #4ade80;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 960px) {
+  .device-rail {
+    padding: 20px;
+  }
+
   .device-rail__head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .device-rail__grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .device-rail {
+    padding: 16px;
   }
 
   .device-rail__grid {

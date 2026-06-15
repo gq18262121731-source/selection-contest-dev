@@ -10,7 +10,15 @@ REQUIRED_SHOUHUAN_CONSTANTS = {
     "BAUD_RATE": int,
     "HANDWARE_MAC": str,
 }
-DEFAULT_SERIAL_DETECTION_KEYWORDS = ("cp210", "usb serial", "nrf", "silicon labs")
+DEFAULT_SERIAL_DETECTION_KEYWORDS = (
+    "cp210",
+    "usb serial",
+    "nrf",
+    "silicon labs",
+    "ch9102",
+    "wch",
+    "usb-enhanced-serial",
+)
 
 
 @dataclass(frozen=True)

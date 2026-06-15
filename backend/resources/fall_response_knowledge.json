@@ -1,0 +1,137 @@
+{
+  "confirmed_fall_critical": {
+    "severity_label": "高危跌倒",
+    "title": "疑似严重跌倒",
+    "immediate_actions": [
+      "先确认老人是否有意识、是否正常呼吸。",
+      "不要立刻强行扶起，先观察头颈部、四肢和躯干是否有明显外伤。",
+      "立即联系护理人员或现场工作人员到场协助。"
+    ],
+    "contraindications": [
+      "不要拖拽老人或强行改变体位。",
+      "怀疑头颈部受伤时，不要随意搬动。"
+    ],
+    "call_emergency": true,
+    "family_message": "如果老人无反应、呼吸异常、胸痛剧痛或大量出血，请立即拨打急救电话。"
+  },
+  "confirmed_fall_warning": {
+    "severity_label": "已确认跌倒",
+    "title": "已确认跌倒",
+    "immediate_actions": [
+      "第一时间查看现场视频并尝试确认老人当前姿态。",
+      "确认老人是否清醒、能否自主起身或回应呼叫。",
+      "尽快联系家属、护理员或值守人员到场查看。"
+    ],
+    "contraindications": [
+      "在未确认伤情前，不要催促老人自行站起。",
+      "不要忽视跌倒后短时间内的意识波动或持续疼痛。"
+    ],
+    "call_emergency": false,
+    "family_message": "如果老人无法自主起身、持续疼痛或出现意识异常，请立刻升级处理。"
+  },
+  "suspected_fall_high_risk": {
+    "severity_label": "疑似跌倒",
+    "title": "高风险疑似跌倒",
+    "immediate_actions": [
+      "立即查看现场画面，确认老人是否倒地或失去平衡。",
+      "观察老人是否在短时间内自行恢复站立或坐稳。",
+      "在系统复核期间，先联系现场人员准备介入。"
+    ],
+    "contraindications": [
+      "不要因为系统仍在复核就完全忽略当前风险。",
+      "不要等到老人长时间静止后再开始核实。"
+    ],
+    "call_emergency": false,
+    "family_message": "该事件尚在复核中，请先按跌倒风险处理并人工确认现场。"
+  },
+  "post_fall_monitoring": {
+    "severity_label": "跌倒后持续观察",
+    "title": "跌倒后观察中",
+    "immediate_actions": [
+      "继续观察老人是否恢复正常活动和交流。",
+      "关注老人是否出现再次倒地、持续不起身或表情痛苦。",
+      "保持与现场护理人员或家属的沟通。"
+    ],
+    "contraindications": [
+      "不要因老人暂时能动就立刻解除关注。",
+      "不要忽视迟发性的疼痛或头晕。"
+    ],
+    "call_emergency": false,
+    "family_message": "系统正在持续观察老人恢复情况，如出现再次异常应及时升级处理。"
+  },
+  "abnormal_recovery": {
+    "severity_label": "高危跌倒",
+    "title": "恢复异常",
+    "immediate_actions": [
+      "尽快确认老人是否仍清醒、是否能配合交流。",
+      "联系护理员或现场人员立即到场查看。",
+      "准备按医疗紧急情况处理。"
+    ],
+    "contraindications": [
+      "不要把恢复异常简单视作短暂疲劳。",
+      "不要在无人陪同的情况下让老人自行活动。"
+    ],
+    "call_emergency": true,
+    "family_message": "恢复异常通常意味着风险升高，如果老人持续异常请立即呼叫急救。"
+  },
+  "possible_false_positive": {
+    "severity_label": "疑似误报待确认",
+    "title": "系统复核中",
+    "immediate_actions": [
+      "先快速查看画面，确认是否是翻身、弯腰或拾物动作。",
+      "继续关注后续几秒内的姿态变化。",
+      "如果老人仍异常静止，请按真实跌倒处理。"
+    ],
+    "contraindications": [
+      "不要仅凭“疑似误报”就完全忽略现场情况。"
+    ],
+    "call_emergency": false,
+    "family_message": "系统倾向该事件可能是误报，但仍建议人工确认。"
+  },
+  "CRITICAL": {
+    "severity_label": "高危跌倒",
+    "immediate_actions": [
+      "立即确认老人意识与呼吸情况。",
+      "不要强行扶起，优先联系现场护理人员。",
+      "必要时立即呼叫急救。"
+    ],
+    "contraindications": [
+      "不要拖拽或随意搬动老人。"
+    ],
+    "call_emergency": true,
+    "family_message": "该事件属于高危跌倒，请以最快速度人工确认并准备急救。"
+  },
+  "WARNING": {
+    "severity_label": "疑似跌倒",
+    "immediate_actions": [
+      "立即查看现场画面。",
+      "确认老人是否能自主起身或回应。",
+      "联系家属或护理人员进一步查看。"
+    ],
+    "contraindications": [
+      "不要延迟人工确认。"
+    ],
+    "call_emergency": false,
+    "family_message": "该事件有较高跌倒风险，请尽快人工确认。"
+  },
+  "NOTICE": {
+    "severity_label": "风险提醒",
+    "immediate_actions": [
+      "持续关注现场画面变化。",
+      "根据老人状态决定是否联系护理人员。"
+    ],
+    "contraindications": [],
+    "call_emergency": false,
+    "family_message": "系统建议保持观察，若情况加重请立刻升级处理。"
+  },
+  "default": {
+    "severity_label": "跌倒风险提醒",
+    "immediate_actions": [
+      "请尽快查看现场。",
+      "联系护理人员或家属进行人工确认。"
+    ],
+    "contraindications": [],
+    "call_emergency": false,
+    "family_message": "系统检测到跌倒相关风险，请人工确认老人当前状态。"
+  }
+}

@@ -1,0 +1,60 @@
+version: 1
+purpose: "Candidate components for fall-detection V3. Items are downloaded or prepared without replacing production weights."
+
+weights:
+  ultralytics:
+    target_dir: weights/yolo26
+    models:
+      - yolo26n-pose.pt
+      - yolo26s-pose.pt
+      - yolo26n.pt
+      - yolo26s.pt
+      - yolo26n-seg.pt
+
+  openmmlab:
+    target_dir: weights/openmmlab
+    packages:
+      - mmpose
+      - mmdet
+      - mmengine
+      - mmcv
+      - mmaction2
+    candidate_families:
+      - RTMPose
+      - RTMO
+      - RTMW
+      - ST-GCN
+      - 2s-AGCN
+      - PoseC3D
+
+tools:
+  python_packages:
+    - fiftyone
+    - albumentations
+    - label-studio
+    - onnx
+    - onnxruntime
+    - onnxruntime-gpu
+  external_apps:
+    - CVAT for video bounding box/keypoint/track annotation
+
+datasets:
+  priority:
+    - gmdcsa24
+    - urfd
+    - fallpose
+    - up_fall
+    - le2i
+  hard_negatives:
+    - sleep
+    - lying
+    - sit_down
+    - sitting
+    - stand_up
+    - bending
+    - kneeling
+    - picking_objects
+    - caregiver_assist
+    - occlusion
+    - low_light
+    - multi_person_crossing

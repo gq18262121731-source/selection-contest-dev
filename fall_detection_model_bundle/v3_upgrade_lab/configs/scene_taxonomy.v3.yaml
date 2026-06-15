@@ -1,0 +1,78 @@
+scene_types:
+  bedroom_low_light:
+    risk_context: "bedside falls, sleeping, blanket/bed occlusion"
+    default_roi_profile: bedroom
+    required_negatives:
+      - sleeping
+      - lying_on_bed
+      - sit_down
+      - stand_up
+  living_room_far_view:
+    risk_context: "small target, sofa, bending, family members crossing"
+    default_roi_profile: living_room
+    required_negatives:
+      - lying_on_sofa
+      - bending
+      - picking_objects
+      - non_target_person_on_floor
+  corridor_multi_person:
+    risk_context: "tracking switch, occlusion, wall support"
+    default_roi_profile: corridor
+    required_negatives:
+      - caregiver_assist
+      - occlusion
+      - multi_person_crossing
+  bathroom_or_doorway:
+    risk_context: "partial body, wet floor, short visibility"
+    default_roi_profile: doorway
+    required_negatives:
+      - partial_body_out_of_frame
+      - kneeling
+      - occlusion
+  demo_clean_room:
+    risk_context: "controlled demonstration clips"
+    default_roi_profile: demo
+    required_negatives:
+      - sit_down
+      - lying
+
+action_stages:
+  positive:
+    - loss_of_balance
+    - fall_transition
+    - impact
+    - fallen_immobile
+    - fallen_moving
+    - post_fall_immobile
+  hard_negative:
+    - sleeping
+    - lying
+    - lying_on_bed
+    - lying_on_sofa
+    - sit_down
+    - sitting
+    - stand_up
+    - bending
+    - kneeling
+    - picking_objects
+    - caregiver_assist
+    - exercise
+    - occlusion
+    - non_target_person_fall
+    - non_target_person_on_floor
+    - partial_body_out_of_frame
+  neutral:
+    - standing
+    - walking
+    - normal
+
+metadata_fields:
+  - camera_id
+  - target_user_id
+  - scene_type
+  - lighting
+  - distance_level
+  - occlusion_level
+  - multi_person
+  - target_visible
+  - authorized_for_training

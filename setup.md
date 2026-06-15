@@ -334,6 +334,20 @@ conda run -n helth powershell -ExecutionPolicy Bypass -File .\scripts\smoke_back
 conda run -n helth powershell -ExecutionPolicy Bypass -File .\scripts\run_smoke_tests.ps1 -BuildFrontend
 ```
 
+### 8.4 主系统与视觉服务对接说明
+
+如果当前工作重点是“独立视觉服务接入本项目主系统”，请直接查看：
+
+- [主系统视频桥接对接说明](docs/main-system-video-bridge-integration.md)
+
+这份说明单独整理了：
+
+- 独立视觉服务和主系统的角色划分
+- 主系统 `/api/v1/video-bridge/*` 接口
+- 视觉服务应提供的 `/healthz`、`/stream/*`、`/integration/results/*`、`/alerting/*` 接口约定
+- 运行时桥接配置、轮询方式、推送方式与联调验收步骤
+- 2026-06-09 的实测联通结果和已发现问题
+
 ## 9. 推荐启动顺序
 
 如果你想按最稳妥的顺序执行，建议按下面的步骤来：
@@ -481,7 +495,7 @@ conda run -n helth python -c "import torch; print(torch.__version__); print(torc
 
 ```powershell
 cd mobile\flutter_app
-flutter pub get
+ 
 flutter run
 ```
 
@@ -519,3 +533,14 @@ flutter run -d <device_id>
 | `elder05_02` | 老人端 | 卫十二 | `123456` | `family05` | 与 `family05` 联动，登录后实时显示 mock data |
 | `family06` | 家庭端 | 家属 06 | `123456` | `family06` | 绑定对应虚拟设备组，登录后实时显示 mock data |
 | `elder06_01` | 老人端 | 韩十三 | `123456` | `family06` | 与 `family06` 联动，登录后实时显示 mock data |
+
+cd docker
+docker compose up -d redis
+
+conda activate health
+python D:\health_original\health1\run.py
+
+cd frontend\vue-dashboard
+npm run dev
+
+community_admin

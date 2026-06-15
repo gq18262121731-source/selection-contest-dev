@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
 import '../models/alarm_model.dart';
 import '../repositories/alarm_repository.dart';
 
@@ -53,12 +55,13 @@ class AlarmProvider extends ChangeNotifier {
       _alarms = results[0] as List<AlarmRecord>;
       _queue = results[1] as List<AlarmQueueItem>;
       _pushes = results[2] as List<MobilePushRecord>;
-      
+      _sortAlarms();
+
       _status = AlarmLoadStatus.loaded;
       notifyListeners();
 
       _connectWebSocket();
-    } catch (e) {
+    } catch (_) {
       _status = AlarmLoadStatus.error;
       _errorMessage = '获取告警信息失败';
       notifyListeners();
@@ -70,9 +73,7 @@ class AlarmProvider extends ChangeNotifier {
     try {
       _channel = _repository.connectToAlarms();
       _subscription = _channel!.stream.listen(
-        (message) {
-          _handleWsMessage(message);
-        },
+        _handleWsMessage,
         onError: (_) => _handleWsDisconnect(),
         onDone: () => _handleWsDisconnect(),
       );
@@ -85,36 +86,17 @@ class AlarmProvider extends ChangeNotifier {
   void _handleWsMessage(dynamic message) {
     try {
       final data = jsonDecode(message as String);
-      if (data is! Map<String, dynamic>) return;
+      if (data is! Map<String, dynamic>) {
+        return;
+      }
 
-      // 后端可能发两种格式：
-      // 1. 单条 AlarmRecord（broadcast_alarm）
-      // 2. {type: "alarm_queue", queue: [...]}（broadcast_alarm_queue）
       final msgType = data['type'] as String?;
-
       if (msgType == 'alarm_queue') {
-        // 全量刷新队列
-        final rawQueue = data['queue'] as List<dynamic>?;
-        if (rawQueue != null) {
-          _queue = rawQueue
-              .map((e) => AlarmQueueItem.fromJson(e as Map<String, dynamic>))
-              .toList();
-        }
-        // 同步更新 alarms 列表（从 queue 中提取）
-        for (final item in _queue) {
-          final newAlarm = item.alarm;
-          final index = _alarms.indexWhere((a) => a.id == newAlarm.id);
-          if (index != -1) {
-            _alarms[index] = newAlarm;
-          } else {
-            _alarms.insert(0, newAlarm);
-          }
-        }
+        _reconcileActiveQueue(data['queue'] as List<dynamic>?);
         notifyListeners();
         return;
       }
 
-      // 单条报警推送
       if (data.containsKey('id') && data.containsKey('alarm_type')) {
         final newAlarm = AlarmRecord.fromJson(data);
         final index = _alarms.indexWhere((a) => a.id == newAlarm.id);
@@ -123,20 +105,80 @@ class AlarmProvider extends ChangeNotifier {
         } else {
           _alarms.insert(0, newAlarm);
         }
+        _sortAlarms();
         notifyListeners();
       }
     } catch (_) {}
   }
 
+  void _reconcileActiveQueue(List<dynamic>? rawQueue) {
+    if (rawQueue != null) {
+      _queue = rawQueue
+          .map((e) => AlarmQueueItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+
+    final queueAlarmById = <String, AlarmRecord>{
+      for (final item in _queue) item.alarm.id: item.alarm,
+    };
+
+    _alarms = _alarms.map((alarm) {
+      final queued = queueAlarmById[alarm.id];
+      if (queued != null) {
+        return queued;
+      }
+      if (!alarm.acknowledged) {
+        return AlarmRecord(
+          id: alarm.id,
+          deviceMac: alarm.deviceMac,
+          alarmType: alarm.alarmType,
+          alarmLevel: alarm.alarmLevel,
+          alarmPriority: alarm.alarmPriority,
+          message: alarm.message,
+          createdAt: alarm.createdAt,
+          acknowledged: true,
+          anomalyProbability: alarm.anomalyProbability,
+        );
+      }
+      return alarm;
+    }).toList();
+
+    for (final queued in queueAlarmById.values) {
+      final index = _alarms.indexWhere((alarm) => alarm.id == queued.id);
+      if (index != -1) {
+        _alarms[index] = queued;
+      } else {
+        _alarms.insert(0, queued);
+      }
+    }
+
+    _sortAlarms();
+  }
+
+  void _sortAlarms() {
+    _alarms.sort((a, b) {
+      final aTime = a.createdAtDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.createdAtDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+  }
+
   Future<void> acknowledge(String alarmId) async {
+    final index = _alarms.indexWhere((a) => a.id == alarmId);
+    bool previousAcknowledged = false;
+    if (index != -1) {
+      previousAcknowledged = _alarms[index].acknowledged;
+      _alarms[index].acknowledged = true;
+      notifyListeners();
+    }
     try {
       await _repository.acknowledgeAlarm(alarmId);
-      final index = _alarms.indexWhere((a) => a.id == alarmId);
+    } catch (_) {
       if (index != -1) {
-        _alarms[index].acknowledged = true;
+        _alarms[index].acknowledged = previousAcknowledged;
         notifyListeners();
       }
-    } catch (_) {}
+    }
   }
 
   void reset() {

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from backend.models.alarm_model import AlarmPriority, AlarmRecord, MobilePushRecord
+from backend.repositories.mobile_push_device_repo import MobilePushDeviceRepository
 
 
 class NotificationService:
     """Simulates mobile push delivery for high-priority alarms."""
 
-    def __init__(self) -> None:
+    def __init__(self, repository: MobilePushDeviceRepository | None = None) -> None:
+        self._repository = repository
         self._push_records: list[MobilePushRecord] = []
 
     def dispatch_mobile_push(self, alarm: AlarmRecord) -> MobilePushRecord:

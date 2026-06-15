@@ -9,6 +9,8 @@ import 'package:record/record.dart';
 class AudioService {
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _alarmPlayer = AudioPlayer();
+  bool _alarmLooping = false;
 
   Future<bool> requestPermissions() async {
     final status = await Permission.microphone.request();
@@ -123,7 +125,29 @@ class AudioService {
     await _player.stop();
   }
 
+  Future<bool> startAlarmLoop({String assetPath = 'audio/sos_alarm.ogg'}) async {
+    if (_alarmLooping) {
+      return true;
+    }
+    _alarmLooping = true;
+    try {
+      await _alarmPlayer.setReleaseMode(ReleaseMode.loop);
+      await _alarmPlayer.play(AssetSource(assetPath), volume: 1.0);
+      return true;
+    } catch (_) {
+      _alarmLooping = false;
+      return false;
+    }
+  }
+
+  Future<void> stopAlarmLoop() async {
+    _alarmLooping = false;
+    await _alarmPlayer.stop();
+    await _alarmPlayer.setReleaseMode(ReleaseMode.stop);
+  }
+
   void dispose() {
+    _alarmPlayer.dispose();
     _recorder.dispose();
     _player.dispose();
   }

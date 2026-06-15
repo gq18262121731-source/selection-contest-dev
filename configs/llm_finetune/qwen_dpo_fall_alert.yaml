@@ -1,0 +1,27 @@
+### Preference alignment for fall-alert copy and family guidance.
+model_name_or_path: Qwen/Qwen2.5-7B-Instruct
+adapter_name_or_path: saves/fall-alert-lora/sft
+stage: dpo
+do_train: true
+finetuning_type: lora
+lora_target: all
+dataset_dir: data
+dataset: dpo_zh_demo
+template: qwen
+cutoff_len: 2048
+overwrite_cache: true
+preprocessing_num_workers: 4
+output_dir: saves/fall-alert-lora/dpo
+logging_steps: 10
+save_steps: 100
+plot_loss: true
+overwrite_output_dir: false
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 5.0e-6
+num_train_epochs: 1.0
+pref_beta: 0.1
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+bf16: false
+fp16: true

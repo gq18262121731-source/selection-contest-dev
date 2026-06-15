@@ -201,3 +201,19 @@ def test_reader_reconnects_and_redetects_new_com_port(monkeypatch) -> None:
     assert opened_ports == ["COM3", "COM4"]
     assert parser.calls == [("54:10:26:01:00:DF", "161803AABBCC", IngestionSource.SERIAL)]
     assert published == [sample]
+
+
+def test_extract_payload_does_not_guess_mac_from_noise_before_marker() -> None:
+    line = "RAW,ID=0001,DATA=AA11BB22CC33161803AABBCC"
+    payload, mac = SerialGatewayReader._extract_payload_and_mac(line)
+
+    assert payload == "161803AABBCC"
+    assert mac is None
+
+
+def test_extract_payload_with_compact_mac_prefix_keeps_mac() -> None:
+    line = "5410260100DF161803AABBCC"
+    payload, mac = SerialGatewayReader._extract_payload_and_mac(line)
+
+    assert payload == "161803AABBCC"
+    assert mac == "54:10:26:01:00:DF"

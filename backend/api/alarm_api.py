@@ -77,10 +77,13 @@ async def list_mobile_pushes(
 
 @router.post("/{alarm_id}/acknowledge", response_model=AlarmRecord)
 async def acknowledge_alarm(alarm_id: str) -> AlarmRecord:
-    alarm = get_alarm_service().acknowledge(alarm_id)
+    alarm, collapsed_sibling_ids = get_alarm_service().acknowledge(alarm_id)
     if not alarm:
         raise HTTPException(status_code=404, detail="Alarm not found")
-    get_health_data_repository().acknowledge_alert(alarm_id)
+    repository = get_health_data_repository()
+    repository.acknowledge_alert(alarm_id)
+    for sibling_id in collapsed_sibling_ids:
+        repository.acknowledge_alert(sibling_id)
     await get_websocket_manager().broadcast_alarm(alarm.model_dump(mode="json"))
     await get_websocket_manager().broadcast_alarm_queue(
         {

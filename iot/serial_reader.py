@@ -139,6 +139,7 @@ class SerialGatewayReader:
         enable_broadcast_sos_overlay: bool = False,
         response_cycle_seconds: float = 2.0,
         broadcast_cycle_seconds: float = 0.5,
+        command_delay_seconds: float = 0.12,
         reconnect_delay_seconds: float = 1.0,
         target_mac_provider: Callable[[], str | None] | None = None,
         on_sample: Callable[[HealthSample], None] | None = None,
@@ -168,6 +169,7 @@ class SerialGatewayReader:
                         enable_broadcast_sos_overlay=enable_broadcast_sos_overlay,
                         response_cycle_seconds=response_cycle_seconds,
                         broadcast_cycle_seconds=broadcast_cycle_seconds,
+                        command_delay_seconds=command_delay_seconds,
                         target_mac_provider=target_mac_provider,
                         on_sample=on_sample,
                     )
@@ -199,6 +201,7 @@ class SerialGatewayReader:
         enable_broadcast_sos_overlay: bool,
         response_cycle_seconds: float,
         broadcast_cycle_seconds: float,
+        command_delay_seconds: float,
         target_mac_provider: Callable[[], str | None] | None,
         on_sample: Callable[[HealthSample], None] | None,
     ) -> None:
@@ -214,6 +217,7 @@ class SerialGatewayReader:
                 disable_uuid_output=disable_uuid_output,
                 apply_mac_filter=apply_mac_filter,
                 apply_packet_type=apply_packet_type,
+                command_delay_seconds=command_delay_seconds,
             )
 
         while True:
@@ -235,13 +239,14 @@ class SerialGatewayReader:
                             connection,
                             target_mac=desired_target_mac,
                             packet_type=desired_packet_type,
+                            command_delay_seconds=command_delay_seconds,
                         )
                         active_target_mac = desired_target_mac
                         active_packet_type = desired_packet_type
                         cycle_started_at = time.monotonic()
                     else:
                         if active_target_mac:
-                            self.stop_scan(connection)
+                            self.stop_scan(connection, command_delay_seconds=command_delay_seconds)
                         active_target_mac = None
                         active_packet_type = packet_type
 
@@ -258,7 +263,11 @@ class SerialGatewayReader:
                     target_packet_type = 5
 
                 if target_packet_type != active_packet_type:
-                    self.switch_packet_type(connection, packet_type=target_packet_type)
+                    self.switch_packet_type(
+                        connection,
+                        packet_type=target_packet_type,
+                        command_delay_seconds=command_delay_seconds,
+                    )
                     active_packet_type = target_packet_type
                     cycle_started_at = time.monotonic()
 
@@ -323,36 +332,37 @@ class SerialGatewayReader:
         if len(compact) < 12:
             return None, None
 
-        collector_payload, collector_mac = SerialGatewayReader._extract_prefixed_payload(compact)
-        if collector_payload:
-            return collector_payload, collector_mac
-
-        mac_match = MAC_PATTERN.search(line)
         mac = None
+        mac_match = MAC_PATTERN.search(line)
         if mac_match:
             compact_mac = re.sub(r"[^0-9A-Fa-f]", "", mac_match.group(1)).upper()
             if len(compact_mac) == 12:
                 mac = SerialGatewayReader._format_mac(compact_mac)
 
-        payload = SerialGatewayReader._extract_embedded_payload(compact)
+        collector_payload, collector_mac = SerialGatewayReader._extract_prefixed_payload(compact)
+        payload = collector_payload or SerialGatewayReader._extract_embedded_payload(compact)
         if not payload or len(payload) % 2 != 0:
             return None, mac
-        return payload, mac
+        return payload, (mac or collector_mac)
 
     @staticmethod
     def _extract_prefixed_payload(compact: str) -> tuple[str | None, str | None]:
-        # Try finding markers and working backwards for the MAC
+        # Try finding known packet markers first.
+        # Only infer MAC from the leading 12 hex chars when the marker starts
+        # exactly at offset 12 (strict "<MAC><PAYLOAD>" shape).
         for marker in [BROADCAST_MARKER, RESPONSE_A_MARKER, RESPONSE_B_MARKER]:
             idx = compact.find(marker)
-            if idx >= 12:
-                mac_candidate = compact[idx-12:idx]
+            if idx == 12:
+                mac_candidate = compact[:12]
                 payload_candidate = compact[idx:]
                 return payload_candidate, SerialGatewayReader._format_mac(mac_candidate)
-        
+            if idx >= 0:
+                return compact[idx:], None
+
         # Fallback to fixed offsets if no marker but long enough (e.g. raw dump)
         if len(compact) >= 12:
             return compact, None
-            
+
         return None, None
 
     @staticmethod

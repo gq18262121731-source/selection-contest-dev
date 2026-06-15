@@ -2,7 +2,7 @@
 set -e
 
 if [ -z "${CONDA_PREFIX:-}" ]; then
-  echo "This project is configured to run inside the 'helth' conda environment." >&2
+  echo "This project is configured to run inside the 'health' conda environment." >&2
   exit 1
 fi
 

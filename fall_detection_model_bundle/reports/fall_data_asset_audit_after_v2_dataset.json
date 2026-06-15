@@ -1,0 +1,66 @@
+{
+  "root": "D:\\Program\\model\\fall_detection",
+  "data_public": {
+    "total_files": 77816,
+    "videos": 220,
+    "images": 77236,
+    "by_extension": {
+      ".csv": 129,
+      ".csv~": 1,
+      ".gz": 21,
+      ".md": 4,
+      ".metadata": 104,
+      ".mp4": 220,
+      ".pdf": 1,
+      ".png": 77236,
+      ".rar": 1,
+      ".txt": 73,
+      ".zip": 1,
+      "<none>": 25
+    }
+  },
+  "data_processed": {
+    "total_files": 46574,
+    "pose_cache_npz": 220,
+    "pose_cache_meta": 220,
+    "by_extension": {
+      ".cache": 7,
+      ".csv": 6,
+      ".jpg": 10772,
+      ".json": 441,
+      ".npz": 440,
+      ".png": 24136,
+      ".txt": 10772
+    }
+  },
+  "fall_detect_dataset": {
+    "root": "D:\\Program\\model\\fall_detection\\data_processed\\fall_detect",
+    "splits": {
+      "train": {
+        "images": 2135,
+        "label_files": 2135
+      },
+      "val": {
+        "images": 678,
+        "label_files": 678
+      },
+      "test": {
+        "images": 27,
+        "label_files": 27
+      }
+    },
+    "label_class_counts": {
+      "5": 27,
+      "3": 590,
+      "0": 1318,
+      "4": 190,
+      "1": 299,
+      "2": 348
+    }
+  },
+  "recommended_next_commands": [
+    "python scripts/build_yolo_fall_detect_dataset.py --frame-step 2 --max-frames-per-video 120",
+    "python scripts/train_yolo_fall_detector.py --model yolo11s.pt --epochs 120 --batch 16 --name yolo_fall_detector_v2_recall",
+    "python scripts/evaluate_yolo_detect.py --weights runs/yolo_fall_detector_v2_recall/weights/best.pt"
+  ]
+}

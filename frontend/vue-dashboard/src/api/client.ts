@@ -511,6 +511,9 @@ export interface CommunityDashboardElderItem {
   blood_pressure?: string | null;
   temperature?: number | null;
   active_alarm_count: number;
+  sos_active?: boolean;
+  active_sos_alarm_id?: string | null;
+  active_sos_trigger?: "double_click" | "long_press" | null;
   structured_health?: StructuredHealthInsight | null;
 }
 

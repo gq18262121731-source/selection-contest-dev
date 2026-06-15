@@ -1,0 +1,10 @@
+{
+  "weights": "D:\\Program\\model\\fall_detection\\weights\\yolo_fall_detector_v1.pt",
+  "data": "D:\\Program\\model\\fall_detection\\configs\\fall_detect_dataset.yaml",
+  "split": "val",
+  "precision": 0.3967705650999687,
+  "recall": 0.6622847133545942,
+  "map50": 0.48709583263772266,
+  "map50_95": 0.3315322351921208,
+  "results_dir": "D:\\Program\\model\\fall_detection\\runs\\yolo_fall_detector_v1_val_eval_after_fusion_plan"
+}

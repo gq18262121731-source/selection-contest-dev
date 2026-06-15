@@ -1,5 +1,5 @@
 param(
-    [string]$CondaEnv = 'helth',
+    [string]$CondaEnv = 'health',
     [switch]$BuildFrontend
 )
 

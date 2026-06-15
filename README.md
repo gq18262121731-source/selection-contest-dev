@@ -215,6 +215,10 @@ conda run -n helth powershell -ExecutionPolicy Bypass -File .\scripts\start_fron
 curl http://127.0.0.1:8000/healthz
 ```
 
+如果当前要做“独立视觉服务接入主系统”的联调，请优先阅读：
+
+- [主系统视频桥接对接说明](docs/main-system-video-bridge-integration.md)
+
 ### 局域网真机接入
 
 如果后续要让 Android 真机在同一局域网访问后端，按下面步骤即可：

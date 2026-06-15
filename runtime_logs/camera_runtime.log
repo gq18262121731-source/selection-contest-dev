@@ -1,0 +1,134 @@
+2026-06-09 16:25:45 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:25:45 INFO camera_runtime.service: Camera runtime started for rtsp://***:***@192.168.8.249:554/tcp/av0_1
+2026-06-09 16:25:48 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:25:51 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:25:54 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:25:57 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:00 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:03 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:06 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:09 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:12 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:15 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:18 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:21 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:24 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:27 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:30 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:33 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:36 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:39 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:42 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:45 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:48 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:51 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:26:54 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:26:57 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:00 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:03 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:06 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:09 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:12 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:15 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:18 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:21 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:24 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:27 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:30 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:33 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:36 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:39 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:42 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:45 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:48 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:51 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:27:54 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:27:57 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:00 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:03 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:06 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:09 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:12 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:15 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:18 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:21 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:24 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:27 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:30 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:33 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:36 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:39 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:42 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:45 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:48 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:51 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:28:54 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:28:57 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:00 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:03 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:06 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:09 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:12 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:15 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:18 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:21 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:24 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:27 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:31 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:34 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:37 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:40 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:43 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:46 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:49 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:52 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:29:55 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:29:58 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:01 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:04 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:07 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:10 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:13 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:16 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:19 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:22 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:25 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:28 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:31 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:34 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:37 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:40 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:43 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:46 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:49 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:52 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:30:55 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:30:58 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:01 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:04 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:07 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:10 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:13 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:16 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:19 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:22 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:25 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:28 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:31 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:34 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:37 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:40 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:43 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:46 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:49 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:52 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:31:55 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:31:58 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:32:01 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:32:04 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:32:07 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:32:10 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:32:13 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:32:16 INFO camera_runtime.service: Using OpenCV capture path
+2026-06-09 16:32:19 WARNING camera_runtime.service: Configured RTSP endpoint 192.168.8.249:554 is not reachable from this computer: TimeoutError: timed out
+2026-06-09 16:32:22 INFO camera_runtime.service: Using OpenCV capture path

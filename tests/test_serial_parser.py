@@ -39,6 +39,17 @@ def _broadcast_payload(sos_value: int = 0x01) -> bytes:
     )
 
 
+def _broadcast_payload_with_temp(temp_raw: int, sos_value: int = 0x00) -> bytes:
+    return bytes.fromhex(
+        "0201061AFF4C000215"
+        "526164696F6C616E642D541000000000"
+        "54"
+        "63"
+        f"{temp_raw:04X}"
+        f"{sos_value:02X}"
+    )
+
+
 def test_response_a_emits_immediately_and_b_merges() -> None:
     """Response A is emitted immediately; when B follows within the merge window,
     a merged AB sample is also emitted."""
@@ -146,3 +157,48 @@ def test_broadcast_packet_maps_long_press_sos() -> None:
     assert sample.sos_flag is True
     assert sample.sos_value == 2
     assert sample.sos_trigger == "long_press"
+
+
+def test_broadcast_packet_maps_bitmask_sos_values() -> None:
+    parser = T10PacketParser()
+
+    sample_double = parser.feed("54:10:26:01:00:DF", _broadcast_payload(0x81), source=IngestionSource.SERIAL)
+    sample_long = parser.feed("54:10:26:01:00:DF", _broadcast_payload(0x82), source=IngestionSource.SERIAL)
+
+    assert sample_double is not None
+    assert sample_double.sos_flag is True
+    assert sample_double.sos_trigger == "double_click"
+    assert sample_double.sos_value == 0x81
+
+    assert sample_long is not None
+    assert sample_long.sos_flag is True
+    assert sample_long.sos_trigger == "long_press"
+    assert sample_long.sos_value == 0x82
+
+
+def test_broadcast_low_temperature_is_treated_as_surface_temperature() -> None:
+    parser = T10PacketParser()
+    sample = parser.feed(
+        "54:10:26:01:00:DF",
+        _broadcast_payload_with_temp(0x0999, 0x00),  # 24.57
+        source=IngestionSource.SERIAL,
+    )
+
+    assert sample is not None
+    assert sample.packet_type == "broadcast"
+    assert sample.surface_temperature == 24.57
+    assert sample.temperature == 0.0
+
+
+def test_broadcast_unknown_nonzero_sos_value_still_flags_sos() -> None:
+    parser = T10PacketParser()
+    sample = parser.feed(
+        "54:10:26:01:00:DF",
+        _broadcast_payload_with_temp(0x0E3F, 0x80),
+        source=IngestionSource.SERIAL,
+    )
+
+    assert sample is not None
+    assert sample.sos_flag is True
+    assert sample.sos_value == 0x80
+    assert sample.sos_trigger is None

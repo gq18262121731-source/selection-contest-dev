@@ -7,7 +7,7 @@ from uuid import uuid4
 from backend.config import Settings
 from backend.models.auth_model import AuthAccountPreview, LoginResponse, SessionUser
 from backend.models.care_model import CareDirectory, CommunityProfile, ElderProfile, FamilyProfile
-from backend.models.device_model import DeviceBindStatus, DeviceRecord
+from backend.models.device_model import DeviceBindStatus, DeviceIngestMode, DeviceRecord
 from backend.models.user_model import UserRole
 from backend.services.device_service import DeviceService
 from backend.services.relation_service import RelationService
@@ -368,6 +368,13 @@ class CareService:
             [d for d in devices if str(getattr(d, "ingest_mode", "")) in ("mock", "DeviceIngestMode.MOCK", "")],
             key=lambda item: item.mac_address,
         )
+        bound_real_devices_by_user: dict[str, list[DeviceRecord]] = {}
+        for device in sorted(devices, key=lambda item: (item.created_at, item.mac_address)):
+            if not device.user_id or device.bind_status != DeviceBindStatus.BOUND:
+                continue
+            if device.ingest_mode == DeviceIngestMode.MOCK:
+                continue
+            bound_real_devices_by_user.setdefault(device.user_id, []).append(device)
         community = self._community_profile()
         family_map = {
             family.id: FamilyProfile(
@@ -386,8 +393,14 @@ class CareService:
         elders: list[ElderProfile] = []
         for index, elder_seed in enumerate(DEMO_ELDER_SEEDS):
             assigned_mac = ""
-            if elder_seed.receives_mock_device and mock_device_index < len(mock_device_macs):
+            device_macs: list[str] = []
+            bound_real_devices = bound_real_devices_by_user.get(elder_seed.id, [])
+            if bound_real_devices:
+                device_macs = [device.mac_address for device in bound_real_devices]
+                assigned_mac = device_macs[0]
+            elif elder_seed.receives_mock_device and mock_device_index < len(mock_device_macs):
                 assigned_mac = mock_device_macs[mock_device_index]
+                device_macs = [assigned_mac]
                 mock_device_index += 1
             elder = ElderProfile(
                 id=elder_seed.id,
@@ -396,7 +409,7 @@ class CareService:
                 apartment=elder_seed.apartment,
                 community_id=community.id,
                 device_mac=assigned_mac,
-                device_macs=[assigned_mac] if assigned_mac else [],
+                device_macs=device_macs,
                 family_ids=[elder_seed.family_id],
             )
             elders.append(elder)

@@ -20,19 +20,24 @@ class AlarmService:
         notification_service: object,
         *,
         sos_dedupe_window_seconds: int = 15,
+        sos_release_window_seconds: int = 2,
     ) -> None:
         self._detector = detector
         self._queue = queue
         self._notification_service = notification_service
         self._alarms: list[AlarmRecord] = []
         self._sos_dedupe_window = timedelta(seconds=max(1, sos_dedupe_window_seconds))
+        self._sos_release_window = timedelta(seconds=max(1, sos_release_window_seconds))
         # Post-acknowledgment cooldown: after a user dismisses an SOS popup,
-        # the bracelet may still broadcast SOS packets for 30+ seconds.
+        # some bracelet firmware may continue broadcasting SOS bits for a while.
         # This dict tracks {device_mac: ack_timestamp} so we can suppress
-        # new SOS alerts during the cooldown period.
+        # repeated alerts from the same physical event.
         self._sos_ack_cooldowns: dict[str, datetime] = {}
+        self._last_non_sos_sample_at: dict[str, datetime] = {}
+        # Keep post-ack suppression short; long cooldowns can hide true new SOS events.
+        # Use a small multiple of the dedupe window to absorb lingering packets only.
         self._sos_ack_cooldown_duration = timedelta(
-            seconds=30, # 30 seconds covers the broadcast window while being test-friendly
+            seconds=max(20, int(self._sos_dedupe_window.total_seconds() * 2)),
         )
 
     def evaluate(self, sample: HealthSample) -> list[AlarmRecord]:
@@ -52,7 +57,8 @@ class AlarmService:
     def list_alarms(self, device_mac: str | None = None, active_only: bool = False) -> list[AlarmRecord]:
         alarms = self._alarms
         if device_mac:
-            alarms = [alarm for alarm in alarms if alarm.device_mac == device_mac.upper()]
+            normalized_mac = self._normalize_mac(device_mac)
+            alarms = [alarm for alarm in alarms if self._normalize_mac(alarm.device_mac) == normalized_mac]
         if active_only:
             alarms = [alarm for alarm in alarms if not alarm.acknowledged]
         return alarms
@@ -66,24 +72,89 @@ class AlarmService:
     def list_mobile_pushes(self, limit: int = 50) -> list[MobilePushRecord]:
         return self._notification_service.list_mobile_pushes(limit=limit)
 
-    def acknowledge(self, alarm_id: str) -> AlarmRecord | None:
+    @staticmethod
+    def _normalize_mac(device_mac: str) -> str:
+        compact = "".join(ch for ch in device_mac if ch.isalnum()).upper()
+        if len(compact) == 12:
+            return ":".join(compact[i : i + 2] for i in range(0, 12, 2))
+        return device_mac.upper()
+
+    def clear_device_sos_state(self, device_mac: str) -> list[str]:
+        """Clear transient SOS suppression state for a specific device.
+
+        This is used when a device is (re)bound so the next SOS from the same
+        physical band is treated as a fresh event for the new owner context.
+        Returns the IDs of active SOS alarms that were collapsed.
+        """
+        normalized_mac = self._normalize_mac(device_mac)
+        self._sos_ack_cooldowns.pop(normalized_mac, None)
+        self._last_non_sos_sample_at.pop(normalized_mac, None)
+        cleared_alarm_ids: list[str] = []
+        for index, existing in enumerate(self._alarms):
+            if existing.alarm_type.value != "sos" or existing.acknowledged:
+                continue
+            if self._normalize_mac(existing.device_mac) != normalized_mac:
+                continue
+            self._alarms[index] = existing.model_copy(update={"acknowledged": True})
+            self._queue.remove(existing.id)
+            cleared_alarm_ids.append(existing.id)
+        if cleared_alarm_ids:
+            logger.info(
+                "Cleared %d residual SOS alarms for %s after device binding context changed.",
+                len(cleared_alarm_ids),
+                normalized_mac,
+            )
+        return cleared_alarm_ids
+
+    def observe_sample(self, sample: HealthSample) -> list[str]:
+        normalized_mac = self._normalize_mac(sample.device_mac)
+        if sample.sos_flag:
+            return []
+
+        self._last_non_sos_sample_at[normalized_mac] = sample.timestamp
+        return []
+
+    def acknowledge(self, alarm_id: str) -> tuple[AlarmRecord | None, list[str]]:
         for index, alarm in enumerate(self._alarms):
             if alarm.id == alarm_id:
                 updated = alarm.model_copy(update={"acknowledged": True})
                 self._alarms[index] = updated
                 self._queue.remove(alarm_id)
+                collapsed_sibling_ids: list[str] = []
                 # Record SOS acknowledgment so subsequent broadcasts from
                 # the same physical button press are silently suppressed.
                 if alarm.alarm_type.value == "sos":
-                    mac = alarm.device_mac.upper()
+                    mac = self._normalize_mac(alarm.device_mac)
                     self._sos_ack_cooldowns[mac] = datetime.now(timezone.utc)
+                    collapsed_sibling_ids = self._acknowledge_active_sos_siblings(
+                        device_mac=mac,
+                        exclude_alarm_id=alarm_id,
+                    )
                     logger.info(
-                        "SOS acknowledged for %s — cooldown active for %ds.",
+                        "SOS acknowledged for %s (collapsed %d sibling alarms) - cooldown active for %ds.",
                         mac,
+                        len(collapsed_sibling_ids),
                         self._sos_ack_cooldown_duration.total_seconds(),
                     )
-                return updated
-        return None
+                return updated, collapsed_sibling_ids
+        return None, []
+
+    def _acknowledge_active_sos_siblings(self, *, device_mac: str, exclude_alarm_id: str) -> list[str]:
+        acknowledged_ids: list[str] = []
+        normalized_mac = self._normalize_mac(device_mac)
+        for index, existing in enumerate(self._alarms):
+            if existing.id == exclude_alarm_id:
+                continue
+            if existing.alarm_type.value != "sos":
+                continue
+            if existing.acknowledged:
+                continue
+            if self._normalize_mac(existing.device_mac) != normalized_mac:
+                continue
+            self._alarms[index] = existing.model_copy(update={"acknowledged": True})
+            self._queue.remove(existing.id)
+            acknowledged_ids.append(existing.id)
+        return acknowledged_ids
 
     def _upsert_alarm(self, alarm: AlarmRecord) -> AlarmRecord | None:
         # Check post-acknowledgment cooldown first: if the user just dismissed
@@ -108,17 +179,17 @@ class AlarmService:
 
     def _is_in_sos_ack_cooldown(self, device_mac: str) -> bool:
         """Return True if the device is within the post-acknowledgment cooldown."""
-        mac = device_mac.upper()
+        mac = self._normalize_mac(device_mac)
         ack_at = self._sos_ack_cooldowns.get(mac)
         if ack_at is None:
             return False
         elapsed = datetime.now(timezone.utc) - ack_at
         if elapsed > self._sos_ack_cooldown_duration:
-            # Cooldown expired — clear it so future SOS events are not affected.
+            # Cooldown expired - clear it so future SOS events are not affected.
             del self._sos_ack_cooldowns[mac]
             return False
         logger.debug(
-            "SOS suppressed for %s — within post-ack cooldown (%ds/%ds elapsed).",
+            "SOS suppressed for %s - within post-ack cooldown (%ds/%ds elapsed).",
             mac,
             elapsed.total_seconds(),
             self._sos_ack_cooldown_duration.total_seconds(),
@@ -129,19 +200,28 @@ class AlarmService:
         if alarm.alarm_type.value != "sos":
             return None
         now = datetime.now(timezone.utc)
+        incoming_mac = self._normalize_mac(alarm.device_mac)
+        last_non_sos_at = self._last_non_sos_sample_at.get(incoming_mac)
         for index in range(len(self._alarms) - 1, -1, -1):
             existing = self._alarms[index]
             if existing.alarm_type.value != "sos":
                 continue
-            if existing.device_mac != alarm.device_mac or existing.acknowledged:
+            if self._normalize_mac(existing.device_mac) != incoming_mac or existing.acknowledged:
                 continue
-            # A single SOS button press causes the bracelet to broadcast packets
-            # for ~30 seconds. We group all unacknowledged packets within a 120s
-            # window into the same alarm event to prevent multiple popups.
-            # If the unacknowledged alarm is older than 120s, it's a stale/abandoned
-            # event, so we acknowledge it to clear it, allowing the new SOS to trigger a fresh popup.
+            if (
+                last_non_sos_at is not None
+                and last_non_sos_at >= existing.created_at + self._sos_release_window
+            ):
+                # A new non-SOS sample means the previous SOS packet burst has
+                # ended. Treat subsequent SOS as a new event, but do not
+                # auto-acknowledge existing alarms; only users should clear them.
+                continue
+            # A single SOS button press causes multiple broadcast packets.
+            # Group unacknowledged packets within the configured dedupe window.
+            # If an unacknowledged alarm is older than that window, treat it as
+            # stale and clear it so a fresh SOS can trigger a new popup.
             age = now - existing.created_at
-            if age.total_seconds() > 120:
+            if age > self._sos_dedupe_window:
                 self._alarms[index] = existing.model_copy(update={"acknowledged": True})
                 self._queue.remove(existing.id)
                 continue
@@ -149,12 +229,13 @@ class AlarmService:
         return None
 
     def _collapse_active_sos_duplicates(self, *, device_mac: str, keep_alarm_id: str) -> None:
+        normalized_mac = self._normalize_mac(device_mac)
         for index, existing in enumerate(self._alarms):
             if existing.id == keep_alarm_id:
                 continue
             if existing.alarm_type.value != "sos":
                 continue
-            if existing.device_mac != device_mac or existing.acknowledged:
+            if self._normalize_mac(existing.device_mac) != normalized_mac or existing.acknowledged:
                 continue
             self._alarms[index] = existing.model_copy(update={"acknowledged": True})
             self._queue.remove(existing.id)

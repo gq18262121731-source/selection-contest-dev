@@ -116,6 +116,7 @@ onUnmounted(() => {
     <CommunityPage
       v-else-if="activePage === 'overview'"
       :session-user="sessionUser"
+      :can-access-debug="canAccessDebug"
     />
 
     <CommunityTopologyPage

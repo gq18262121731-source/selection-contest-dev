@@ -78,34 +78,46 @@ onMounted(() => {
 
 <template>
   <AuthShell>
-    <AuthCard :variant="authCardVariant">
-      <AuthLoginPage
+    <div class="login-page-layout">
+      <AuthCard :variant="authCardVariant">
+        <AuthLoginPage
+          v-if="authFlow.currentStep.value === 'login'"
+          :login-username="loginUsername"
+          :login-password="loginPassword"
+          :auth-loading="authLoading"
+          :auth-error="authError"
+          @update:login-username="emit('update:loginUsername', $event)"
+          @update:login-password="emit('update:loginPassword', $event)"
+          @submit="emit('submitLogin')"
+          @open-register="authFlow.openRegister()"
+        />
+
+        <RegisterFlow
+          v-else-if="authFlow.currentStep.value === 'register'"
+          @cancel="authFlow.goToLogin()"
+          @complete="handleRegistrationComplete"
+        />
+      </AuthCard>
+
+      <QuickLoginPanel
         v-if="authFlow.currentStep.value === 'login'"
-        :login-username="loginUsername"
-        :login-password="loginPassword"
-        :auth-loading="authLoading"
-        :auth-error="authError"
-        @update:login-username="emit('update:loginUsername', $event)"
-        @update:login-password="emit('update:loginPassword', $event)"
-        @submit="emit('submitLogin')"
-        @open-register="authFlow.openRegister()"
+        :accounts="quickAccounts"
+        :helper-text="quickLoginHelperText"
+        :selected-account="selectedAccount"
+        :disabled="authLoading"
+        @update:selected-account="selectedAccount = $event"
+        @fill="applyQuickAccount(selectedAccount)"
       />
-
-      <RegisterFlow
-        v-else-if="authFlow.currentStep.value === 'register'"
-        @cancel="authFlow.goToLogin()"
-        @complete="handleRegistrationComplete"
-      />
-    </AuthCard>
-
-    <QuickLoginPanel
-      v-if="authFlow.currentStep.value === 'login'"
-      :accounts="quickAccounts"
-      :helper-text="quickLoginHelperText"
-      :selected-account="selectedAccount"
-      :disabled="authLoading"
-      @update:selected-account="selectedAccount = $event"
-      @fill="applyQuickAccount(selectedAccount)"
-    />
+    </div>
   </AuthShell>
 </template>
+
+<style scoped>
+.login-page-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+}
+</style>

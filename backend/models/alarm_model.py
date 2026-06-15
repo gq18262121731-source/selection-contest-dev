@@ -15,6 +15,7 @@ class AlarmType(str, Enum):
     INTELLIGENT_ANOMALY = "intelligent_anomaly"
     COMMUNITY_RISK = "community_risk"
     DEVICE_STATUS = "device_status"
+    VIDEO_FALL = "video_fall"
 
 
 class AlarmPriority(int, Enum):

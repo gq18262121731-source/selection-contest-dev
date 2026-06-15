@@ -1,0 +1,16 @@
+default_profile: default
+
+models:
+  pose:
+    framework: auto
+    ultralytics_path: ../fall_detection_model_bundle/yolo11n-pose.pt
+    imgsz: 640
+    conf: 0.25
+    max_det: 8
+
+profiles:
+  default:
+    description: "Default V1 pose monitoring profile for elder-care camera scenes."
+    process_every: 1
+    imgsz: 640
+    conf: 0.25

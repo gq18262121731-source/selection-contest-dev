@@ -34,6 +34,7 @@ let serialTargetSyncVersion = 0;
 let alarmReconnectTimer: number | null = null;
 let alarmReconnectAttempts = 0;
 let pendingFocusedDeviceMac = "";
+let alarmDrivenDashboardRefreshTimer: number | null = null;
 
 const activeAlarms = ref<AlarmRecord[]>([]);
 const sosAlarmQueue = ref<AlarmRecord[]>([]);
@@ -317,12 +318,43 @@ function stopWorkspaceRuntime() {
 }
 
 function stopAlarmSocket() {
+  if (alarmDrivenDashboardRefreshTimer !== null) {
+    window.clearTimeout(alarmDrivenDashboardRefreshTimer);
+    alarmDrivenDashboardRefreshTimer = null;
+  }
   if (alarmReconnectTimer !== null) {
     window.clearTimeout(alarmReconnectTimer);
     alarmReconnectTimer = null;
   }
   alarmSocket?.close();
   alarmSocket = null;
+}
+
+function scheduleDashboardRefreshFromAlarmEvent() {
+  if (alarmDrivenDashboardRefreshTimer !== null) {
+    window.clearTimeout(alarmDrivenDashboardRefreshTimer);
+  }
+  alarmDrivenDashboardRefreshTimer = window.setTimeout(() => {
+    alarmDrivenDashboardRefreshTimer = null;
+    void refreshDashboardData();
+  }, 250);
+}
+
+function normalizeAlarmQueuePayload(payload: unknown): AlarmRecord[] {
+  if (!Array.isArray(payload)) return [];
+  return payload
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const nested = (entry as { alarm?: AlarmRecord }).alarm;
+      if (nested && typeof nested === "object" && "id" in nested && "alarm_type" in nested) {
+        return nested;
+      }
+      if ("id" in (entry as Record<string, unknown>) && "alarm_type" in (entry as Record<string, unknown>)) {
+        return entry as AlarmRecord;
+      }
+      return null;
+    })
+    .filter((item): item is AlarmRecord => item !== null);
 }
 
 function connectAlarmSocket() {
@@ -341,27 +373,32 @@ function connectAlarmSocket() {
       try {
         const data = JSON.parse(event.data as string) as Record<string, unknown>;
         if (data["type"] === "alarm_queue") {
-          const queue = (data["queue"] as AlarmRecord[]) ?? [];
+          const queue = normalizeAlarmQueuePayload(data["queue"]);
           activeAlarms.value = queue;
-          const sosList = queue.filter((a) => a.alarm_type === "sos" && !a.acknowledged);
-          for (const sos of sosList) {
-            if (!sosAlarmQueue.value.some((s) => s.id === sos.id)) {
-              sosAlarmQueue.value = [...sosAlarmQueue.value, sos];
-            }
-          }
+          sosAlarmQueue.value = queue
+            .filter((alarm) => alarm.alarm_type === "sos" && !alarm.acknowledged)
+            .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
+          scheduleDashboardRefreshFromAlarmEvent();
         } else if (data["id"] && data["alarm_type"]) {
           const alarm = data as unknown as AlarmRecord;
           const idx = activeAlarms.value.findIndex((a) => a.id === alarm.id);
-          if (idx !== -1) {
-            activeAlarms.value = activeAlarms.value.map((a, i) => i === idx ? alarm : a);
+          if (alarm.acknowledged) {
+            if (idx !== -1) {
+              activeAlarms.value = activeAlarms.value.filter((item) => item.id !== alarm.id);
+            }
+          } else if (idx !== -1) {
+            activeAlarms.value = activeAlarms.value.map((a, i) => (i === idx ? alarm : a));
           } else {
             activeAlarms.value = [alarm, ...activeAlarms.value];
           }
-          if (alarm.alarm_type === "sos" && !alarm.acknowledged) {
-            if (!sosAlarmQueue.value.some((s) => s.id === alarm.id)) {
-              sosAlarmQueue.value = [...sosAlarmQueue.value, alarm];
+          if (alarm.alarm_type === "sos") {
+            if (alarm.acknowledged) {
+              sosAlarmQueue.value = sosAlarmQueue.value.filter((item) => item.id !== alarm.id);
+            } else if (!sosAlarmQueue.value.some((item) => item.id === alarm.id)) {
+              sosAlarmQueue.value = [alarm, ...sosAlarmQueue.value];
             }
           }
+          scheduleDashboardRefreshFromAlarmEvent();
         }
       } catch { /* ignore malformed */ }
     };

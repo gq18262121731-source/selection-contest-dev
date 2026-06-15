@@ -1,0 +1,800 @@
+{
+  "generated_at": "2026-05-18T12:26:33.142987+00:00",
+  "promotable": false,
+  "replay": {
+    "positive_runs": 15,
+    "negative_runs": 15,
+    "any_positive_confirmed": false,
+    "any_negative_confirmed": true,
+    "positive_failures": [
+      {
+        "candidate": {
+          "name": "baseline",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\configs\\model_registry.yaml",
+          "profile": "private_scene_fusion_v2",
+          "threshold": null,
+          "process_every": 2,
+          "pose_tracker": "bytetrack",
+          "slug": "baseline__private_scene_fusion_v2__thr-profile__stride-2__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.17542312095562615,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\scene_fall\\baseline__private_scene_fusion_v2__thr-profile__stride-2__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": null,
+          "process_every": 2,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-profile__stride-2__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\scene_fall\\v3__fall_v3_shadow_yolo26_pose__thr-profile__stride-2__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": null,
+          "process_every": 2,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-profile__stride-2__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\scene_fall\\v3__fall_v3_hard_negative_guard__thr-profile__stride-2__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": null,
+          "process_every": 2,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-profile__stride-2__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 6,
+        "event_type_counts": {
+          "state_changed": 6
+        },
+        "state_counts": {
+          "suspected_fall": 6
+        },
+        "confirmed_count": 0,
+        "suspected_count": 6,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782224,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\scene_fall\\v3__fall_v3_shadow_yolo26_pose__thr-profile__stride-2__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": null,
+          "process_every": 2,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-profile__stride-2__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 6,
+        "event_type_counts": {
+          "state_changed": 6
+        },
+        "state_counts": {
+          "suspected_fall": 6
+        },
+        "confirmed_count": 0,
+        "suspected_count": 6,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782224,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\scene_fall\\v3__fall_v3_hard_negative_guard__thr-profile__stride-2__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_153638\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "baseline",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\configs\\model_registry.yaml",
+          "profile": "private_scene_fusion_v2",
+          "threshold": null,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "baseline__private_scene_fusion_v2__thr-profile__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.17542312095562615,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\baseline__private_scene_fusion_v2__thr-profile__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": 0.18,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-0p18__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_shadow_yolo26_pose__thr-0p18__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": 0.22,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-0p22__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_shadow_yolo26_pose__thr-0p22__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": 0.26,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-0p26__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_shadow_yolo26_pose__thr-0p26__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": 0.18,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-0p18__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_hard_negative_guard__thr-0p18__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": 0.22,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-0p22__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_hard_negative_guard__thr-0p22__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": 0.26,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-0p26__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_hard_negative_guard__thr-0p26__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_recall_probe",
+          "threshold": 0.18,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_recall_probe__thr-0p18__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_recall_probe__thr-0p18__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_recall_probe",
+          "threshold": 0.22,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_recall_probe__thr-0p22__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_recall_probe__thr-0p22__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_recall_probe",
+          "threshold": 0.26,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_recall_probe__thr-0p26__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_fall",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_fall_dryrun.mp4",
+        "expected_kind": "positive",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "missed_confirmed_fall",
+        "error_tail": "",
+        "event_count": 3,
+        "event_type_counts": {
+          "state_changed": 3
+        },
+        "state_counts": {
+          "suspected_fall": 3
+        },
+        "confirmed_count": 0,
+        "suspected_count": 3,
+        "max_fall_score": 0.24457863867282867,
+        "avg_fall_score": 0.23380323598782218,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_fall\\v3__fall_v3_recall_probe__thr-0p26__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      }
+    ],
+    "negative_failures": [
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": 0.18,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-0p18__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.31757902354002,
+        "avg_fall_score": 0.1861995492130518,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_shadow_yolo26_pose__thr-0p18__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": 0.22,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-0p22__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.31757902354002,
+        "avg_fall_score": 0.1861995492130518,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_shadow_yolo26_pose__thr-0p22__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_shadow_yolo26_pose",
+          "threshold": 0.26,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_shadow_yolo26_pose__thr-0p26__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.31757902354002,
+        "avg_fall_score": 0.1861995492130518,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_shadow_yolo26_pose__thr-0p26__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": 0.18,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-0p18__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.29606535971164705,
+        "avg_fall_score": 0.17207948073744775,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_hard_negative_guard__thr-0p18__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": 0.22,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-0p22__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.29606535971164705,
+        "avg_fall_score": 0.17207948073744775,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_hard_negative_guard__thr-0p22__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_hard_negative_guard",
+          "threshold": 0.26,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_hard_negative_guard__thr-0p26__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.29606535971164705,
+        "avg_fall_score": 0.17207948073744775,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_hard_negative_guard__thr-0p26__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_recall_probe",
+          "threshold": 0.18,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_recall_probe__thr-0p18__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.2989544761180878,
+        "avg_fall_score": 0.17813802734017373,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_recall_probe__thr-0p18__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_recall_probe",
+          "threshold": 0.22,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_recall_probe__thr-0p22__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.2989544761180878,
+        "avg_fall_score": 0.17813802734017373,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_recall_probe__thr-0p22__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      },
+      {
+        "candidate": {
+          "name": "v3",
+          "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\model_registry.v3.yaml",
+          "profile": "fall_v3_recall_probe",
+          "threshold": 0.26,
+          "process_every": 1,
+          "pose_tracker": "bytetrack",
+          "slug": "v3__fall_v3_recall_probe__thr-0p26__stride-1__tracker-bytetrack"
+        },
+        "label": "scene_safe",
+        "source": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\datasets\\private_dryrun_videos\\scene_safe_dryrun.mp4",
+        "expected_kind": "hard_negative",
+        "process_ok": true,
+        "passed": false,
+        "failure_reason": "confirmed_false_positive",
+        "error_tail": "",
+        "event_count": 4,
+        "event_type_counts": {
+          "state_changed": 3,
+          "fall_confirmed": 1
+        },
+        "state_counts": {
+          "suspected_fall": 2,
+          "confirmed_fall": 1,
+          "post_fall_monitoring": 1
+        },
+        "confirmed_count": 2,
+        "suspected_count": 2,
+        "max_fall_score": 0.2989544761180878,
+        "avg_fall_score": 0.17813802734017373,
+        "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\scene_safe\\v3__fall_v3_recall_probe__thr-0p26__stride-1__tracker-bytetrack",
+        "_summary_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\reports\\replay_matrix_20260518_154250\\summary.json"
+      }
+    ]
+  },
+  "detector": {
+    "v3_detector_path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\weights\\yolo26\\yolo26_fall_detector_v3_best.pt",
+    "v3_detector_exists": true,
+    "cpu_probe_results_csv": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\experiments\\yolo_detector\\yolo26n_fall_detector_v3_cpu_probe\\results.csv",
+    "cpu_refine_results_csv": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\experiments\\yolo_detector\\yolo26n_fall_detector_v3_cpu_refine\\results.csv",
+    "baseline_detector_reference": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\weights\\yolo_fall_detector_v1.pt",
+    "decision": "blocked_from_promotion_until_metrics_exceed_baseline"
+  },
+  "required_to_promote": [
+    "YOLO26 detector validation metrics must match or exceed baseline detector.",
+    "At least one positive private-scene replay must reach confirmed_fall.",
+    "Hard-negative private-scene replay must have zero confirmed_fall.",
+    "Run on CUDA or equivalent accelerator for full training, not CPU probe only.",
+    "Add authorized scene videos for bedroom/living_room/corridor/bathroom categories."
+  ]
+}

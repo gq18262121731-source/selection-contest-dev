@@ -19,7 +19,7 @@ _voice_service = VoiceService(_settings, device_service=get_device_service())
 
 class TTSRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=2000)
-    voice: str = Field(default="longyingtian")
+    voice: str = Field(default="Serena")
     speed: float = Field(default=1.0, ge=0.5, le=2.0)
     fmt: Literal["mp3", "wav", "pcm"] = "mp3"
     workspace: str | None = None
@@ -89,11 +89,12 @@ async def tts_synthesize(payload: TTSRequest) -> dict:
         workspace=payload.workspace,
     )
     audio_b64 = str(raw.get("audio_b64", "") or "")
+    audio_url = str(raw.get("audio_url", "") or "")
     fmt = str(raw.get("fmt", payload.fmt))
     return {
         "ok": bool(raw.get("ok", False)),
         "audio_b64": audio_b64,
-        "audio_url": f"data:audio/{fmt};base64,{audio_b64}" if audio_b64 else "",
+        "audio_url": audio_url or (f"data:audio/{fmt};base64,{audio_b64}" if audio_b64 else ""),
         "fmt": fmt,
         "provider": raw.get("provider"),
         "voice": raw.get("voice", payload.voice),
@@ -106,7 +107,7 @@ async def voice_status() -> dict:
     """Check whether voice services are configured."""
     configured = bool(_settings.dashscope_api_key.strip())
     note = "" if configured else "Set DASHSCOPE_API_KEY (or QWEN_API_KEY) in .env to enable voice features"
-    tts_voices = ["longxiaochun", "longwan", "longcheng", "longhua"] if configured else []
+    tts_voices = ["Cherry", "Serena", "Ethan", "Chelsie"] if configured else []
     if configured and _settings.qwen_tts_model_id.startswith("cosyvoice"):
         note = "CosyVoice 需要通过音色复刻/音色设计创建 voice id，并在 /voice/tts 传入 voice 参数"
         tts_voices = [_settings.qwen_tts_voice_id]

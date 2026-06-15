@@ -1,0 +1,263 @@
+INFO:     Started server process [10872]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     ('127.0.0.1', 12997) - "WebSocket /ws/alarms" [accepted]
+INFO:     connection open
+INFO:     ('127.0.0.1', 10230) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3AE7" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 8596) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3AE7" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 2684) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 6365) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 10667) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 2738) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f6a8' in position 53: illegal multibyte sequence
+Call stack:
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 83, in _worker
+    work_item.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "D:\health_original\health1\iot\serial_reader.py", line 159, in run
+    self._stream_connection(
+  File "D:\health_original\health1\iot\serial_reader.py", line 301, in _stream_connection
+    on_sample(sample)
+  File "D:\health_original\health1\backend\main.py", line 296, in publish_from_thread
+    _serial_logger.warning(
+Message: '\U0001f6a8 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) ！ forwarding to ingest immediately'
+Arguments: ('54:10:26:01:00:DC', 'double_click', 1, 'broadcast')
+INFO:     connection closed
+INFO:     ('127.0.0.1', 6902) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     ('127.0.0.1', 9373) - "WebSocket /ws/alarms" [accepted]
+INFO:     connection open
+INFO:     ('127.0.0.1', 9782) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f6a8' in position 53: illegal multibyte sequence
+Call stack:
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 83, in _worker
+    work_item.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "D:\health_original\health1\iot\serial_reader.py", line 159, in run
+    self._stream_connection(
+  File "D:\health_original\health1\iot\serial_reader.py", line 301, in _stream_connection
+    on_sample(sample)
+  File "D:\health_original\health1\backend\main.py", line 296, in publish_from_thread
+    _serial_logger.warning(
+Message: '\U0001f6a8 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) ！ forwarding to ingest immediately'
+Arguments: ('54:10:26:01:00:DC', 'double_click', 1, 'broadcast')
+INFO:     connection closed
+INFO:     ('127.0.0.1', 13302) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 2268) - "WebSocket /ws/health/53%3A57%3A08%3A00%3A00%3A06" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 13797) - "WebSocket /ws/health/53%3A57%3A08%3A00%3A00%3A01" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 13533) - "WebSocket /ws/health/53%3A57%3A08%3A00%3A00%3A02" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 9681) - "WebSocket /ws/health/53%3A57%3A08%3A00%3A00%3A03" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 3529) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 4372) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     ('127.0.0.1', 14186) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f6a8' in position 53: illegal multibyte sequence
+Call stack:
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 83, in _worker
+    work_item.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "D:\health_original\health1\iot\serial_reader.py", line 159, in run
+    self._stream_connection(
+  File "D:\health_original\health1\iot\serial_reader.py", line 301, in _stream_connection
+    on_sample(sample)
+  File "D:\health_original\health1\backend\main.py", line 296, in publish_from_thread
+    _serial_logger.warning(
+Message: '\U0001f6a8 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) ！ forwarding to ingest immediately'
+Arguments: ('54:10:26:01:00:DC', 'double_click', 1, 'broadcast')
+INFO:     connection closed
+INFO:     ('127.0.0.1', 6190) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f6a8' in position 53: illegal multibyte sequence
+Call stack:
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 83, in _worker
+    work_item.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "D:\health_original\health1\iot\serial_reader.py", line 159, in run
+    self._stream_connection(
+  File "D:\health_original\health1\iot\serial_reader.py", line 301, in _stream_connection
+    on_sample(sample)
+  File "D:\health_original\health1\backend\main.py", line 296, in publish_from_thread
+    _serial_logger.warning(
+Message: '\U0001f6a8 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) ！ forwarding to ingest immediately'
+Arguments: ('54:10:26:01:00:DC', 'double_click', 1, 'broadcast')
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f6a8' in position 53: illegal multibyte sequence
+Call stack:
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 83, in _worker
+    work_item.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "D:\health_original\health1\iot\serial_reader.py", line 159, in run
+    self._stream_connection(
+  File "D:\health_original\health1\iot\serial_reader.py", line 301, in _stream_connection
+    on_sample(sample)
+  File "D:\health_original\health1\backend\main.py", line 296, in publish_from_thread
+    _serial_logger.warning(
+Message: '\U0001f6a8 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) ！ forwarding to ingest immediately'
+Arguments: ('54:10:26:01:00:DC', 'double_click', 1, 'broadcast')
+INFO:     ('127.0.0.1', 9395) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     connection closed
+INFO:     ('127.0.0.1', 7144) - "WebSocket /ws/alarms" [accepted]
+INFO:     connection open
+INFO:     ('127.0.0.1', 4949) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     ('127.0.0.1', 6130) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+ERROR:    keepalive ping failed
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\site-packages\websockets\legacy\protocol.py", line 1233, in keepalive_ping
+    pong_waiter = await self.ping()
+                  ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Test1\.conda\envs\health\Lib\site-packages\websockets\legacy\protocol.py", line 843, in ping
+    await self.write_frame(True, OP_PING, data)
+  File "C:\Users\Test1\.conda\envs\health\Lib\site-packages\websockets\legacy\protocol.py", line 1184, in write_frame
+    await self.drain()
+  File "C:\Users\Test1\.conda\envs\health\Lib\site-packages\websockets\legacy\protocol.py", line 1167, in drain
+    await self._drain()
+  File "C:\Users\Test1\.conda\envs\health\Lib\site-packages\websockets\legacy\protocol.py", line 328, in _drain
+    await self._drain_helper()
+  File "C:\Users\Test1\.conda\envs\health\Lib\site-packages\websockets\legacy\protocol.py", line 308, in _drain_helper
+    assert waiter is None or waiter.cancelled()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f6a8' in position 53: illegal multibyte sequence
+Call stack:
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 83, in _worker
+    work_item.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "D:\health_original\health1\iot\serial_reader.py", line 159, in run
+    self._stream_connection(
+  File "D:\health_original\health1\iot\serial_reader.py", line 301, in _stream_connection
+    on_sample(sample)
+  File "D:\health_original\health1\backend\main.py", line 296, in publish_from_thread
+    _serial_logger.warning(
+Message: '\U0001f6a8 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) ！ forwarding to ingest immediately'
+Arguments: ('54:10:26:01:00:DC', 'double_click', 1, 'broadcast')
+INFO:     ('127.0.0.1', 14561) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     ('127.0.0.1', 4856) - "WebSocket /ws/health/54%3A10%3A26%3A01%3A00%3ADC" [accepted]
+INFO:     connection open
+INFO:     connection closed
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Test1\.conda\envs\health\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'gbk' codec can't encode character '\U0001f6a8' in position 53: illegal multibyte sequence
+Call stack:
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1002, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 83, in _worker
+    work_item.run()
+  File "C:\Users\Test1\.conda\envs\health\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "D:\health_original\health1\iot\serial_reader.py", line 159, in run
+    self._stream_connection(
+  File "D:\health_original\health1\iot\serial_reader.py", line 301, in _stream_connection
+    on_sample(sample)
+  File "D:\health_original\health1\backend\main.py", line 296, in publish_from_thread
+    _serial_logger.warning(
+Message: '\U0001f6a8 SOS DETECTED from %s (trigger=%s, value=%s, type=%s) ！ forwarding to ingest immediately'
+Arguments: ('54:10:26:01:00:DC', 'double_click', 1, 'broadcast')

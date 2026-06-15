@@ -16,11 +16,16 @@ from backend.api.alarm_api import router as alarm_router
 from backend.api.agent_api import router as agent_router
 from backend.api.auth_api import router as auth_router
 from backend.api.care_api import router as care_router
+from backend.api.camera_api import router as camera_router
+from backend.api.camera_source_api import router as camera_source_router
 from backend.api.chat_api import router as chat_router
 from backend.api.device_api import router as device_router
 from backend.api.health_api import router as health_router
+from backend.api.model_finetune_api import router as model_finetune_router
 from backend.api.relation_api import router as relation_router
+from backend.api.target_user_api import router as target_user_router
 from backend.api.user_api import router as user_router
+from backend.api.video_bridge_api import router as video_bridge_router
 from backend.api.voice_api import router as voice_router
 from backend.api.omni_api import router as omni_router
 from backend.config import get_settings
@@ -28,6 +33,10 @@ from backend.models.device_model import DeviceIngestMode, DeviceStatus
 from backend.dependencies import (
     ensure_demo_overlay_history_window,
     get_alarm_service,
+    get_camera_audio_hub,
+    get_camera_frame_hub,
+    get_camera_processed_frame_hub,
+    get_video_bridge_service,
     get_data_generator,
     get_demo_data_status,
     get_device_service,
@@ -65,6 +74,14 @@ async def _list_active_mock_macs() -> list[str]:
         return [mac for mac, count in _active_mock_watchers.items() if count > 0]
 
 
+async def _vision_service_pull_loop() -> None:
+    service = get_video_bridge_service()
+    while True:
+        if service.poll_enabled():
+            await service.poll_once_async()
+        await asyncio.sleep(service.current_poll_interval_seconds())
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings.data_dir.mkdir(parents=True, exist_ok=True)
@@ -79,10 +96,14 @@ async def lifespan(app: FastAPI):
         tasks.append(asyncio.create_task(_serial_stream_loop()))
     if settings.data_mode == "mqtt" and settings.mqtt_enabled:
         tasks.append(asyncio.create_task(_mqtt_stream_loop()))
+    if settings.vision_service_poll_enabled:
+        tasks.append(asyncio.create_task(_vision_service_pull_loop()))
     app.state.background_tasks = tasks
     try:
         yield
     finally:
+        with suppress(Exception):
+            await get_camera_audio_hub().shutdown()
         for task in tasks:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -108,14 +129,19 @@ app.add_middleware(
 app.include_router(device_router, prefix=settings.api_v1_prefix)
 app.include_router(user_router, prefix=settings.api_v1_prefix)
 app.include_router(relation_router, prefix=settings.api_v1_prefix)
+app.include_router(target_user_router, prefix=settings.api_v1_prefix)
 app.include_router(health_router, prefix=settings.api_v1_prefix)
 app.include_router(alarm_router, prefix=settings.api_v1_prefix)
 app.include_router(agent_router, prefix=settings.api_v1_prefix)
 app.include_router(chat_router, prefix=settings.api_v1_prefix)
 app.include_router(care_router, prefix=settings.api_v1_prefix)
+app.include_router(camera_router, prefix=settings.api_v1_prefix)
+app.include_router(camera_source_router, prefix=settings.api_v1_prefix)
 app.include_router(voice_router, prefix=settings.api_v1_prefix)
 app.include_router(omni_router, prefix=settings.api_v1_prefix)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
+app.include_router(video_bridge_router, prefix=settings.api_v1_prefix)
+app.include_router(model_finetune_router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/healthz")
@@ -159,10 +185,17 @@ async def system_info() -> dict[str, object]:
             "local_model_routing": cfg.local_model_routing,
             "local_default_model": cfg.local_default_model,
             "strict_source_match": cfg.strict_source_match,
+            "target_user_vision_warmup_enabled": cfg.target_user_vision_warmup_enabled,
+            "vision_service_poll_enabled": cfg.vision_service_poll_enabled,
+            "fall_detection_enabled": cfg.fall_detection_enabled,
+            "pose_detection_enabled": cfg.pose_detection_enabled,
         },
         "serial_runtime": {
             "enabled": cfg.serial_runtime_enabled,
             "port": cfg.serial_port or "auto-detect",
+            "dual_collector_enabled": cfg.serial_dual_collector_enabled,
+            "broadcast_port": cfg.serial_broadcast_port or None,
+            "response_port": cfg.serial_response_port or None,
             "baudrate": cfg.serial_baudrate,
             "collection_strategy": cfg.serial_collection_strategy,
             "packet_type": cfg.serial_packet_type,
@@ -171,6 +204,7 @@ async def system_info() -> dict[str, object]:
             "broadcast_sos_overlay": cfg.serial_enable_broadcast_sos_overlay,
             "response_cycle_seconds": cfg.serial_response_cycle_seconds,
             "broadcast_cycle_seconds": cfg.serial_broadcast_cycle_seconds,
+            "command_delay_seconds": cfg.serial_command_delay_seconds,
             "active_target_mac": active_target_mac,
             "active_target_device_name": active_target_name,
             "target_locked": active_target_mac is not None,
@@ -179,6 +213,19 @@ async def system_info() -> dict[str, object]:
             "bootstrap_source": cfg.bootstrap_source,
             "bootstrap_status": cfg.bootstrap_status,
             "bootstrap_reason": cfg.bootstrap_reason,
+        },
+        "vision_runtime": {
+            "base_url": cfg.vision_service_base_url,
+            "camera_id": cfg.vision_service_camera_id,
+            "poll_enabled": cfg.vision_service_poll_enabled,
+            "poll_hz": cfg.vision_service_poll_hz,
+            "timeout_seconds": cfg.vision_service_timeout_seconds,
+        },
+        "fall_runtime": {
+            "enabled": cfg.fall_detection_enabled,
+            "model_root": cfg.fall_detection_model_root,
+            "target_device_mac": cfg.resolved_fall_detection_target_device_mac,
+            "target_family_ids": cfg.resolved_fall_detection_target_family_ids,
         },
         "demo_data": get_demo_data_status(),
     }
@@ -235,6 +282,45 @@ async def alarm_stream(websocket: WebSocket) -> None:
             await websocket.receive_text()
     except WebSocketDisconnect:
         await manager.disconnect_alarm(websocket)
+
+
+@app.websocket("/ws/camera")
+async def camera_frame_stream(websocket: WebSocket) -> None:
+    hub = get_camera_frame_hub()
+    await hub.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await hub.disconnect(websocket)
+    finally:
+        await hub.disconnect(websocket)
+
+
+@app.websocket("/ws/camera/processed")
+async def camera_processed_frame_stream(websocket: WebSocket) -> None:
+    hub = get_camera_processed_frame_hub()
+    await hub.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await hub.disconnect(websocket)
+    finally:
+        await hub.disconnect(websocket)
+
+
+@app.websocket("/ws/camera/audio/listen")
+async def camera_audio_stream(websocket: WebSocket) -> None:
+    hub = get_camera_audio_hub()
+    await hub.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        await hub.disconnect(websocket)
+    finally:
+        await hub.disconnect(websocket)
 
 
 async def _mock_stream_loop() -> None:
@@ -325,6 +411,7 @@ async def _serial_stream_loop() -> None:
         enable_broadcast_sos_overlay=settings.serial_enable_broadcast_sos_overlay,
         response_cycle_seconds=settings.serial_response_cycle_seconds,
         broadcast_cycle_seconds=settings.serial_broadcast_cycle_seconds,
+        command_delay_seconds=settings.serial_command_delay_seconds,
         target_mac_provider=lambda: get_device_service().get_active_serial_target_mac(),
         on_sample=publish_from_thread,
     )

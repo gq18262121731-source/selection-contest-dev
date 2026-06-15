@@ -22,7 +22,7 @@ const pageMeta = computed(() => [
 </script>
 
 <template>
-  <section class="page-stack">
+  <section class="topology-page-container">
     <PageHeader
       eyebrow="Topology"
       title="设备拓扑"
@@ -36,31 +36,68 @@ const pageMeta = computed(() => [
       @select="workspace.setSelectedElderId"
     />
 
-    <div class="topology-layout">
-      <CommunityRelationTopology
-        :topology="workspace.relationTopology.value ?? null"
-        :selected-device-mac="workspace.selectedDeviceMac.value"
-        @select-device="workspace.setSelectedDeviceMac"
-      />
-      <CommunityDeviceInspector
-        :elder="workspace.selectedElder.value"
-        :device="workspace.selectedDevice.value"
-      />
+    <div class="topology-two-column-layout">
+      <div class="topology-left-column">
+        <CommunityRelationTopology
+          :topology="workspace.relationTopology.value ?? null"
+          :selected-device-mac="workspace.selectedDeviceMac.value"
+          @select-device="workspace.setSelectedDeviceMac"
+        />
+      </div>
+      <div class="topology-right-column">
+        <CommunityDeviceInspector
+          :elder="workspace.selectedElder.value"
+          :device="workspace.selectedDevice.value"
+        />
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.topology-layout {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.82fr);
-  align-items: start;
+.topology-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 40px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
-@media (max-width: 1180px) {
-  .topology-layout {
-    grid-template-columns: 1fr;
+.topology-two-column-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  align-items: flex-start;
+}
+
+.topology-left-column {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.topology-right-column {
+  width: 400px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1400px) {
+  .topology-right-column {
+    width: 360px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .topology-two-column-layout {
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .topology-right-column {
+    width: 100%;
   }
 }
 </style>

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+import sys
 from typing import Annotated, Literal
 
 from pydantic import Field, field_validator, model_validator
@@ -107,7 +108,15 @@ class Settings(BaseSettings):
     serial_packet_merge_timeout_seconds: float = 5.0
     serial_mac_filter: str = "53:57:08:00:00:00"
     serial_detection_keywords: list[str] = Field(
-        default_factory=lambda: ["cp210", "usb serial", "nrf", "silicon labs"]
+        default_factory=lambda: [
+            "cp210",
+            "usb serial",
+            "nrf",
+            "silicon labs",
+            "ch9102",
+            "wch",
+            "usb-enhanced-serial",
+        ]
     )
     serial_fallback_device_mac: str = ""
     serial_auto_configure: bool = True
@@ -117,6 +126,10 @@ class Settings(BaseSettings):
     serial_enable_broadcast_sos_overlay: bool = True
     serial_response_cycle_seconds: float = 0.4
     serial_broadcast_cycle_seconds: float = 0.1
+    serial_command_delay_seconds: float = 0.12
+    serial_dual_collector_enabled: bool = False
+    serial_broadcast_port: str = ""
+    serial_response_port: str = ""
 
     mqtt_enabled: bool = False
     mqtt_broker_host: str = "localhost"
@@ -132,6 +145,61 @@ class Settings(BaseSettings):
     raw_data_dir: str = str(BASE_DIR / "data" / "raw")
     processed_data_dir: str = str(BASE_DIR / "data" / "processed")
     artifact_data_dir: str = str(BASE_DIR / "data" / "artifacts")
+    camera_ip: str = ""
+    camera_user: str = "admin"
+    camera_password: str = ""
+    camera_source_mode: Literal["auto", "rtsp", "local"] = "auto"
+    camera_local_index: int = 0
+    camera_runtime_base_url: str = ""
+    camera_local_http_url: str = ""
+    camera_local_backend: Literal["auto", "dshow", "msmf", "any"] = "dshow"
+    camera_rtsp_path: str = "/tcp/av0_0"
+    camera_rtsp_port: int = 10554
+    camera_onvif_port: int = 10080
+    camera_stream_rtsp_path: str = "/tcp/av0_1"
+    camera_audio_rtsp_path: str = "/tcp/av0_1"
+    camera_audio_sample_rate: int = 16000
+    camera_audio_gateway_url: str = ""
+    camera_sdk_dll_dir: str = ""
+    camera_activex_clsid: str = ""
+    camera_probe_timeout_seconds: float = 3.0
+    camera_snapshot_timeout_seconds: float = 8.0
+    camera_stream_fps: float = 24.0
+    camera_stream_profile: Literal["smooth", "balanced", "quality"] = "balanced"
+    camera_stream_quality_path: str = "/tcp/av0_0"
+    camera_stream_smooth_path: str = "/tcp/av0_1"
+    camera_stream_jpeg_quality: int = 4
+    camera_stream_width: int = 0
+    camera_stream_send_timeout_seconds: float = 0.35
+    camera_stream_keep_warm: bool = False
+    target_user_vision_warmup_enabled: bool = False
+    vision_service_base_url: str = "http://127.0.0.1:8090"
+    vision_service_local_base_url: str = "http://127.0.0.1:8090"
+    vision_service_camera_id: str = "camera_01"
+    vision_service_poll_enabled: bool = False
+    vision_service_poll_hz: float = 2.0
+    vision_service_timeout_seconds: float = 2.5
+    vision_service_push_token: str = ""
+    camera_ptz_move_seconds: float = 0.35
+    camera_ptz_speed: float = 0.45
+    camera1_name: str = "camera1"
+    camera1_ip: str = ""
+    camera1_user: str = ""
+    camera1_password: str = ""
+    camera1_rtsp_port: int = 0
+    camera1_onvif_port: int = 0
+    camera1_rtsp_path: str = ""
+    camera1_stream_rtsp_path: str = ""
+    camera1_audio_rtsp_path: str = ""
+    camera2_name: str = "camera2"
+    camera2_ip: str = ""
+    camera2_user: str = ""
+    camera2_password: str = ""
+    camera2_rtsp_port: int = 0
+    camera2_onvif_port: int = 0
+    camera2_rtsp_path: str = ""
+    camera2_stream_rtsp_path: str = ""
+    camera2_audio_rtsp_path: str = ""
     static_health_data_path: str = str(BASE_DIR / "data" / "raw" / "patients_data_with_alerts.xlsx")
     static_health_sheet_name: str = ""
     static_model_dir: str = str(BASE_DIR / "data" / "artifacts" / "static_health")
@@ -151,6 +219,62 @@ class Settings(BaseSettings):
     model_fusion_rule_weight: float = 0.6
     model_fusion_model_weight: float = 0.4
     model_device: Literal["auto", "cpu", "cuda"] = "auto"
+    fall_detection_enabled: bool = False
+    fall_detection_model_root: str = str(BASE_DIR / "fall_detection_model_bundle")
+    fall_detection_model_registry_path: str = ""
+    fall_detection_python: str = sys.executable
+    fall_detection_event_log: str = str(BASE_DIR / "data" / "fall_events" / "camera_events.jsonl")
+    fall_detection_snapshot_dir: str = str(BASE_DIR / "data" / "fall_events" / "snapshots")
+    fall_detection_profile: str = "private_scene_fusion_v2"
+    fall_detection_speed_profile: Literal["accuracy", "balanced", "fast"] = "accuracy"
+    fall_detection_threshold_override: float = 0.0
+    fall_detection_process_every_override: int = 0
+    fall_detection_alert_rules_path: str = ""
+    fall_detection_injury_rules_path: str = ""
+    fall_detection_target_device_mac: str = "CAMERA-192.168.8.254"
+    fall_detection_target_elder_id: str = ""
+    fall_detection_target_family_ids: str = ""
+    fall_detection_status_log_interval_seconds: float = 2.0
+    fall_detection_restart_delay_seconds: float = 5.0
+    fall_detection_roi_enabled: bool = False
+    fall_detection_roi_rect: str = ""
+    fall_detection_roi_min_overlap: float = 0.5
+    fall_detection_confirmed_roi_bypass_score: float = 0.6
+    fall_detection_frame_width: float = 2304.0
+    fall_detection_frame_height: float = 1296.0
+    fall_detection_min_alert_score: float = 0.0
+    fall_detection_confirmation_window_seconds: float = 8.0
+    fall_detection_min_confirmed_hits: int = 2
+    fall_detection_min_track_age_seconds: float = 0.8
+    fall_detection_high_confidence_score: float = 0.72
+    fall_detection_min_down_seconds: float = 1.2
+    fall_detection_min_bbox_area_ratio: float = 0.008
+    fall_detection_edge_margin_ratio: float = 0.015
+    fall_detection_edge_partial_min_height_ratio: float = 0.22
+    fall_detection_track_state_ttl_seconds: float = 120.0
+    fall_detection_incident_reopen_seconds: float = 20.0
+    fall_detection_multimodal_enabled: bool = True
+    fall_detection_multimodal_provider: Literal["auto", "qwen_omni", "siliconflow_script", "disabled"] = "auto"
+    fall_detection_multimodal_min_score: float = 0.45
+    fall_detection_multimodal_timeout_seconds: int = 45
+    pose_detection_enabled: bool = False
+    pose_detection_model_root: str = str(BASE_DIR / "pose_detection_model_bundle")
+    pose_detection_python: str = sys.executable
+    pose_detection_event_log: str = str(BASE_DIR / "data" / "pose_events" / "pose_events.jsonl")
+    pose_detection_latest_json: str = str(BASE_DIR / "data" / "pose_events" / "latest_pose.json")
+    pose_detection_snapshot_dir: str = str(BASE_DIR / "data" / "pose_events" / "snapshots")
+    pose_detection_profile: str = "default"
+    pose_detection_process_every_override: int = 0
+    pose_detection_status_log_interval_seconds: float = 1.5
+    pose_detection_restart_delay_seconds: float = 5.0
+    pose_detection_pose_conf_threshold: float = 0.25
+    pose_detection_track_max_det: int = 8
+    pose_detection_analysis_width: int = 960
+    pose_detection_min_pose_score: float = 0.20
+    pose_detection_bed_roi_rect: str = ""
+    pose_detection_floor_roi_rect: str = ""
+    pose_detection_single_frame_model_path: str = ""
+    pose_detection_single_frame_imgsz: int = 320
     rule_quality_floor: float = 0.80
     poor_signal_quality_threshold: float = 85.0
     stability_profile: str = "robust_demo"
@@ -355,21 +479,40 @@ class Settings(BaseSettings):
         return normalized
 
     @property
+    def resolved_fall_detection_target_family_ids(self) -> list[str]:
+        raw = str(self.fall_detection_target_family_ids or "").strip()
+        if not raw:
+            return []
+        return [item.strip() for item in raw.split(",") if item.strip()]
+
+    @property
+    def resolved_fall_detection_target_device_mac(self) -> str:
+        configured = (self.fall_detection_target_device_mac or "").strip().upper()
+        if configured:
+            return configured
+        camera_ip = self.camera_ip.strip()
+        if camera_ip:
+            return f"CAMERA-{camera_ip}".upper()
+        return "CAMERA-UNKNOWN"
+
+    @property
     def qwen_tts_model_name(self) -> str:
-        return self.qwen_tts_model.strip() or "cosyvoice-v3-flash"
+        return self.qwen_tts_model.strip() or "qwen3-tts-flash"
 
     @property
     def qwen_tts_model_id(self) -> str:
         raw = (self.qwen_tts_model.strip() or "").lower()
         if not raw:
-            return "cosyvoice-v3-flash"
-        if raw in {"qwen3-tts-flash", "qwen3-tts", "qwen-tts"}:
-            return "cosyvoice-v3-flash"
+            return "qwen3-tts-flash"
+        if raw in {"qwen3-tts-flash", "qwen3-tts"}:
+            return "qwen3-tts-flash"
+        if raw == "qwen-tts":
+            return "qwen-tts"
         return self.qwen_tts_model.strip().lower()
 
     @property
     def qwen_tts_voice_id(self) -> str:
-        return self.qwen_tts_voice.strip() or "longyingtian"
+        return self.qwen_tts_voice.strip() or "Serena"
 
     @property
     def tongyi_chat_configured(self) -> bool:

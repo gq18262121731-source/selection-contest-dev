@@ -1,0 +1,39 @@
+version: 1
+dataset_root: data/llm_finetune
+exports:
+  health_sft:
+    file: health_sft.jsonl
+    task: health_report
+    description: Health Q&A, health report generation, and monitoring explanation samples.
+    required_fields:
+      - source_event_id
+      - device_mac
+      - risk_level
+      - messages
+      - accepted_answer
+  tool_trace_sft:
+    file: tool_trace_sft.jsonl
+    task: community_agent_tool_call
+    description: Agent tool-call traces for query_sensor_history, build_chart_payloads, and synthesize_recommendations.
+    required_fields:
+      - source_event_id
+      - tool_calls
+      - messages
+      - accepted_answer
+  fall_alert_preference:
+    file: fall_alert_preference.jsonl
+    task: fall_alert_alignment
+    description: Chosen/rejected fall-alert language for family notification and response guidance.
+    required_fields:
+      - source_event_id
+      - risk_level
+      - chosen_messages
+      - rejected_messages
+  safety_refusal:
+    file: safety_refusal.jsonl
+    task: medical_safety
+    description: Medical boundary and safe-refusal samples.
+    required_fields:
+      - source_event_id
+      - messages
+      - accepted_answer

@@ -135,6 +135,9 @@ class CommunityDashboardElderItem(BaseModel):
     temperature: float | None = None
     steps: int | None = None
     active_alarm_count: int = 0
+    sos_active: bool = False
+    active_sos_alarm_id: str | None = None
+    active_sos_trigger: str | None = None
     structured_health: StructuredHealthInsight | None = None
 
 

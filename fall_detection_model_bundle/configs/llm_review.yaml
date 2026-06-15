@@ -1,0 +1,17 @@
+provider: siliconflow
+base_url: https://api.siliconflow.cn/v1/chat/completions
+model: Qwen/Qwen3-VL-8B-Instruct
+fallback_model: Qwen/Qwen3-VL-32B-Instruct
+free_fallback_model: THUDM/GLM-4.1V-9B-Thinking
+free_fallback_supports_json_mode: false
+temperature: 0.1
+max_tokens: 512
+timeout_seconds: 60
+
+review_policy:
+  call_when_states:
+    - suspected_fall
+    - confirmed_fall
+    - post_fall_monitoring
+  suggested_min_score: 0.45
+  output_language: zh-CN

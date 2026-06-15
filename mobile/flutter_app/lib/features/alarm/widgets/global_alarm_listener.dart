@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/services/audio_service.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/alarm_model.dart';
 import '../providers/alarm_provider.dart';
 
@@ -18,13 +23,18 @@ class GlobalAlarmListener extends StatefulWidget {
 
 class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
   static const Duration _freshAlarmWindow = Duration(minutes: 2);
+  static const Duration _fallbackToneInterval = Duration(milliseconds: 1200);
 
   final Set<String> _shownAlarmIds = <String>{};
   final List<AlarmRecord> _pendingAlarms = <AlarmRecord>[];
 
   AlarmProvider? _alarmProvider;
+  AudioService? _audioService;
   bool _initializedSnapshot = false;
   bool _dialogVisible = false;
+  OverlayEntry? _floatingWarningEntry;
+  Timer? _floatingWarningTimer;
+  Timer? _fallbackToneTimer;
 
   @override
   void didChangeDependencies() {
@@ -35,11 +45,14 @@ class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
       _alarmProvider = provider;
       _alarmProvider?.addListener(_onAlarmChanged);
     }
+    _audioService ??= context.read<AudioService>();
   }
 
   @override
   void dispose() {
     _alarmProvider?.removeListener(_onAlarmChanged);
+    _stopAlarmToneLoop();
+    _hideFloatingWarning();
     super.dispose();
   }
 
@@ -58,12 +71,17 @@ class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
       _pendingAlarms.clear();
       _initializedSnapshot = false;
       _dialogVisible = false;
+      _stopAlarmToneLoop();
+      _hideFloatingWarning();
       return;
     }
 
     if (provider.status != AlarmLoadStatus.loaded) {
+      _stopAlarmToneLoop();
       return;
     }
+
+    _syncAlarmToneState(provider);
 
     if (!_initializedSnapshot) {
       for (final alarm in provider.alarms) {
@@ -108,7 +126,142 @@ class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
     return age <= _freshAlarmWindow;
   }
 
+  void _syncAlarmToneState(AlarmProvider provider) {
+    final hasActiveSos = provider.alarms.any((alarm) => alarm.isSos && !alarm.acknowledged);
+    if (hasActiveSos) {
+      _startAlarmToneLoop();
+      return;
+    }
+    _stopAlarmToneLoop();
+  }
+
+  void _startAlarmToneLoop() {
+    unawaited(_startAlarmToneLoopAsync());
+  }
+
+  void _stopAlarmToneLoop() {
+    _stopFallbackToneLoop();
+    _audioService?.stopAlarmLoop();
+  }
+
+  Future<void> _startAlarmToneLoopAsync() async {
+    final started = await (_audioService?.startAlarmLoop() ?? Future.value(false));
+    if (started) {
+      _stopFallbackToneLoop();
+      return;
+    }
+    _startFallbackToneLoop();
+  }
+
+  void _startFallbackToneLoop() {
+    if (_fallbackToneTimer != null) {
+      return;
+    }
+    unawaited(SystemSound.play(SystemSoundType.alert));
+    _fallbackToneTimer = Timer.periodic(_fallbackToneInterval, (_) {
+      unawaited(SystemSound.play(SystemSoundType.alert));
+    });
+  }
+
+  void _stopFallbackToneLoop() {
+    _fallbackToneTimer?.cancel();
+    _fallbackToneTimer = null;
+  }
+
+  bool _isFamilyUser() {
+    final role = context.read<AuthProvider>().user?.role.toLowerCase();
+    return role == 'family';
+  }
+
+  void _showFloatingWarning(AlarmRecord alarm) {
+    if (!mounted || !_isFamilyUser()) {
+      return;
+    }
+    final overlay = Overlay.of(context, rootOverlay: true);
+    if (overlay == null) {
+      return;
+    }
+
+    _floatingWarningTimer?.cancel();
+    _floatingWarningEntry?.remove();
+
+    _floatingWarningEntry = OverlayEntry(
+      builder: (_) => SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7F1D1D),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFCA5A5), width: 1.2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 12,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Color(0xFFFECACA), size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'SOS 紧急告警',
+                            style: TextStyle(
+                              color: Color(0xFFFFF1F2),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            alarm.message.isNotEmpty
+                                ? alarm.message
+                                : '已检测到紧急求助，请立即处理。',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFFFEE2E2),
+                              fontSize: 12,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(_floatingWarningEntry!);
+    _floatingWarningTimer = Timer(const Duration(seconds: 4), _hideFloatingWarning);
+  }
+
+  void _hideFloatingWarning() {
+    _floatingWarningTimer?.cancel();
+    _floatingWarningTimer = null;
+    _floatingWarningEntry?.remove();
+    _floatingWarningEntry = null;
+  }
+
   void _enqueueAlarm(AlarmRecord alarm) {
+    _showFloatingWarning(alarm);
     if (_dialogVisible) {
       final alreadyQueued = _pendingAlarms.any((item) => item.id == alarm.id);
       if (!alreadyQueued) {
@@ -125,6 +278,7 @@ class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
       return;
     }
 
+    _startAlarmToneLoop();
     _dialogVisible = true;
     await showDialog<void>(
       context: context,
@@ -175,6 +329,8 @@ class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
         actions: [
           TextButton(
             onPressed: () {
+              _stopAlarmToneLoop();
+              _hideFloatingWarning();
               _alarmProvider?.acknowledge(alarm.id);
               Navigator.pop(dialogContext);
             },
@@ -197,6 +353,7 @@ class _GlobalAlarmListenerState extends State<GlobalAlarmListener> {
     }
 
     final nextAlarm = _pendingAlarms.removeAt(0);
+    _showFloatingWarning(nextAlarm);
     _showAlarmDialog(nextAlarm);
   }
 

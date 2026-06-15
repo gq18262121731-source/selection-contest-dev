@@ -112,76 +112,100 @@ function isSelectedDevice(id: string) {
 <style scoped>
 .topology-panel {
   display: grid;
-  gap: 18px;
+  gap: 28px;
   background: #ffffff;
+  padding: 28px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+  border: 2px solid #e2e8f0;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  overflow-x: hidden;
 }
 
 .topology-head,
 .lane-list,
 .orphan-row {
   display: grid;
-  gap: 16px;
+  gap: 24px;
+  max-width: 100%;
 }
 
 .topology-head {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .topology-head h2 {
   margin: 0;
   font-family: var(--font-display);
-  color: var(--text-main);
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .topology-subtitle {
-  margin: 8px 0 0;
-  color: var(--text-sub);
+  margin: 12px 0 0;
+  color: #64748b;
   line-height: 1.7;
+  font-size: 0.95rem;
 }
 
 .topology-community {
   display: grid;
-  gap: 4px;
-  padding: 14px 16px;
-  min-width: 220px;
-  border-radius: 24px;
-  background: #f8fafc;
-  color: var(--text-main);
-  border: 1px solid var(--line-medium);
+  gap: 6px;
+  padding: 18px 20px;
+  min-width: 200px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #0f172a;
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .topology-community span,
 .lane-label {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-sub);
+  letter-spacing: 0.1em;
+  color: #64748b;
+  font-weight: 600;
 }
 
 .topology-community span {
-  color: var(--text-sub);
+  color: #64748b;
 }
 
 .topology-community strong {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.topology-community small {
+  color: #64748b;
+  font-size: 0.85rem;
 }
 
 .lane-list {
-  gap: 20px;
+  gap: 28px;
 }
 
 .topology-lane {
   display: grid;
-  grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 0.8fr) minmax(220px, 1.2fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 24px;
   align-items: center;
-  padding: 20px;
-  border-radius: 28px;
-  background: #ffffff;
-  border: 1px solid var(--line-medium);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
   position: relative;
+  max-width: 100%;
 }
 
 .topology-lane::before,
@@ -189,23 +213,25 @@ function isSelectedDevice(id: string) {
   content: "";
   position: absolute;
   top: 50%;
-  height: 1px;
-  background: var(--line-medium);
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, #cbd5e1 50%, transparent 100%);
+  transform: translateY(-50%);
 }
 
 .topology-lane::before {
-  left: 30%;
-  width: 10%;
+  left: 32%;
+  width: 12%;
 }
 
 .topology-lane::after {
-  right: 30%;
-  width: 10%;
+  right: 32%;
+  width: 12%;
 }
 
 .lane-column {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .lane-families,
@@ -217,95 +243,151 @@ function isSelectedDevice(id: string) {
   justify-items: center;
 }
 
+.lane-label {
+  margin-bottom: 4px;
+}
+
 .node-core,
 .node-chip {
-  border-radius: 22px;
-  border: 1px solid var(--line-medium);
+  border-radius: 16px;
+  border: 2px solid #cbd5e1;
   background: #ffffff;
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   text-align: left;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all 200ms ease;
+  position: relative;
+  min-width: 0;
+  word-wrap: break-word;
 }
 
 .node-core {
-  min-width: 220px;
+  min-width: 180px;
   justify-items: center;
   text-align: center;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid #94a3b8;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .node-core[data-risk="high"] {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #f87171;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
 }
 
 .node-core[data-risk="medium"] {
-  background: #fffbeb;
-  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fbbf24;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
 }
 
 .node-chip {
   cursor: default;
 }
 
-.node-chip--device {
-  cursor: pointer;
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+.node-chip--family {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #7dd3fc;
 }
 
-.node-chip--device:hover,
+.node-chip--device {
+  cursor: pointer;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.node-chip--device:hover {
+  transform: translateY(-2px);
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+}
+
 .node-chip--selected {
-  transform: translateY(-1px);
-  border-color: var(--brand);
-  background: #eff6ff;
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.08);
+  transform: translateY(-2px);
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+}
+
+.node-chip--device[data-risk="high"] {
+  border-color: #fca5a5;
+}
+
+.node-chip--device[data-risk="medium"] {
+  border-color: #fcd34d;
 }
 
 .node-chip strong,
 .node-core strong {
-  color: var(--text-main);
-  font-size: 0.98rem;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .node-chip small,
-.node-core small,
+.node-core small {
+  color: #64748b;
+  font-style: normal;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .node-chip em,
 .node-core em {
-  color: var(--text-sub);
+  color: #94a3b8;
   font-style: normal;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .node-chip--ghost {
-  background: #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-style: dashed;
+  border-color: #cbd5e1;
 }
 
 .orphan-strip {
   display: grid;
-  gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line-strong);
+  gap: 18px;
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 2px solid #cbd5e1;
+  max-width: 100%;
 }
 
 .orphan-row {
   display: flex;
   flex-wrap: wrap;
+  gap: 16px;
+  max-width: 100%;
 }
 
 .topology-empty {
-  padding: 20px;
-  border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid var(--line-medium);
-  color: var(--text-sub);
+  padding: 40px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px dashed #cbd5e1;
+  color: #64748b;
+  text-align: center;
+  font-size: 1.05rem;
 }
 
-@media (max-width: 1100px) {
-  .topology-head,
+@media (max-width: 1200px) {
+  .topology-panel {
+    padding: 20px;
+  }
+
   .topology-lane {
     grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
   }
 
   .topology-lane::before,

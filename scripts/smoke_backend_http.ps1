@@ -1,5 +1,5 @@
 param(
-    [string]$CondaEnv = 'helth',
+    [string]$CondaEnv = 'health',
     [string]$ListenHost = '127.0.0.1',
     [int]$Port = 8000
 )

@@ -17,6 +17,19 @@ class VoiceService:
     """DashScope voice service for ASR, Omni, and TTS flows."""
 
     _OMNI_AUDIO_VOICE_CANDIDATES = ("Chelsie", "Ethan")
+    _QWEN_TTS_VOICE_ALIASES = {
+        "longxiaochun": "Cherry",
+        "longwan": "Serena",
+        "longcheng": "Ethan",
+        "longhua": "Chelsie",
+        "longyingtian": "Serena",
+    }
+    _QWEN_TTS_BUILTIN_VOICES = {
+        "cherry": "Cherry",
+        "serena": "Serena",
+        "ethan": "Ethan",
+        "chelsie": "Chelsie",
+    }
 
     def __init__(self, settings: Settings, device_service: Any | None = None) -> None:
         self._settings = settings
@@ -138,6 +151,19 @@ class VoiceService:
         except Exception as exc:
             logger.debug("Failed to build health context for omni chat: %s", exc)
             return ""
+
+    @classmethod
+    def _resolve_qwen_tts_voice(cls, voice: str | None) -> str:
+        normalized = (voice or "").strip()
+        if not normalized:
+            return "Serena"
+
+        lowered = normalized.lower()
+        if lowered in cls._QWEN_TTS_VOICE_ALIASES:
+            return cls._QWEN_TTS_VOICE_ALIASES[lowered]
+        if lowered in cls._QWEN_TTS_BUILTIN_VOICES:
+            return cls._QWEN_TTS_BUILTIN_VOICES[lowered]
+        return "Serena"
 
     @staticmethod
     def _build_elder_voice_style_prompt(*, has_health_context: bool) -> str:
@@ -315,6 +341,18 @@ class VoiceService:
             answer_text = "".join(text_parts).strip()
             audio_pcm_b64 = "".join(audio_pcm_parts)
             audio_wav_b64 = self._pcm_b64_to_wav_b64(audio_pcm_b64) if audio_pcm_b64 else ""
+            audio_url = ""
+
+            if normalized_role == "elder" and not audio_wav_b64 and answer_text:
+                fallback_tts = self.synthesize(
+                    answer_text,
+                    voice=self._settings.qwen_tts_voice_id,
+                    fmt="wav",
+                )
+                if fallback_tts.get("ok"):
+                    audio_wav_b64 = str(fallback_tts.get("audio_b64", "") or "")
+                    audio_url = str(fallback_tts.get("audio_url", "") or "")
+                    selected_voice = str(fallback_tts.get("voice") or selected_voice or "")
 
             return {
                 "ok": True,
@@ -322,7 +360,7 @@ class VoiceService:
                 "answer": answer_text,
                 "audio_b64": audio_wav_b64,
                 "audio_pcm_b64": audio_pcm_b64,
-                "audio_url": f"data:audio/wav;base64,{audio_wav_b64}" if audio_wav_b64 else "",
+                "audio_url": audio_url or (f"data:audio/wav;base64,{audio_wav_b64}" if audio_wav_b64 else ""),
                 "audio_sample_rate": 24000 if audio_wav_b64 else None,
                 "fmt": "wav" if audio_wav_b64 else None,
                 "voice": selected_voice if audio_wav_b64 else None,
@@ -360,14 +398,7 @@ class VoiceService:
             dashscope.api_key = self._api_key
 
             if "qwen-tts" in model_id or "qwen3-tts" in model_id:
-                voice_map = {
-                    "longxiaochun": "Cherry",
-                    "longwan": "Cherry",
-                    "longcheng": "Genny",
-                    "longhua": "Genny",
-                    "longyingtian": "Genny",
-                }
-                target_voice = voice_map.get(voice.lower(), "Cherry")
+                target_voice = self._resolve_qwen_tts_voice(voice)
 
                 response = dashscope.MultiModalConversation.call(
                     model=model_id,
@@ -383,17 +414,23 @@ class VoiceService:
 
                 if response.status_code == 200:
                     output = getattr(response, "output", None)
-                    if output and hasattr(output, "audio") and hasattr(output.audio, "data"):
-                        audio_b64 = output.audio.data
-                        if not audio_b64:
-                            return {
-                                "ok": False,
-                                "audio_b64": "",
-                                "error": "Model returned empty audio data",
-                            }
+                    audio = getattr(output, "audio", None) if output else None
+                    audio_b64 = str(getattr(audio, "data", "") or "")
+                    audio_url = str(getattr(audio, "url", "") or "")
+                    if audio_b64:
                         return {
                             "ok": True,
                             "audio_b64": audio_b64,
+                            "audio_url": "",
+                            "fmt": fmt,
+                            "provider": f"dashscope/{model_id}",
+                            "voice": target_voice,
+                        }
+                    if audio_url:
+                        return {
+                            "ok": True,
+                            "audio_b64": "",
+                            "audio_url": audio_url,
                             "fmt": fmt,
                             "provider": f"dashscope/{model_id}",
                             "voice": target_voice,
@@ -443,6 +480,7 @@ class VoiceService:
                 return {
                     "ok": True,
                     "audio_b64": audio_b64,
+                    "audio_url": "",
                     "fmt": fmt,
                     "provider": f"dashscope/{model_id}",
                     "voice": voice_id,
@@ -457,7 +495,13 @@ class VoiceService:
             )
             if response.get_audio_data():
                 audio_b64 = base64.b64encode(response.get_audio_data()).decode("ascii")
-                return {"ok": True, "audio_b64": audio_b64, "fmt": fmt, "provider": f"dashscope/{model_id}"}
+                return {
+                    "ok": True,
+                    "audio_b64": audio_b64,
+                    "audio_url": "",
+                    "fmt": fmt,
+                    "provider": f"dashscope/{model_id}",
+                }
 
             return {"ok": False, "audio_b64": "", "error": "TTS failed to generate audio"}
         except Exception as exc:

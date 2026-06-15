@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../widgets/logout_action.dart';
@@ -389,7 +389,7 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   Widget _buildBindDeviceButton(CareProvider provider) {
     return ElevatedButton.icon(
       onPressed:
-          provider.isMutating ? null : () => _showBindDeviceDialog(provider),
+          provider.isMutating ? null : () => _showBindDeviceDialogSafely(provider),
       icon: provider.isMutating
           ? const SizedBox(
               width: 24,
@@ -574,106 +574,21 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
     );
   }
 
-  Future<void> _showBindDeviceDialog(CareProvider provider) async {
-    final macController = TextEditingController();
-    final nameController = TextEditingController(text: 'T10-WATCH');
+  Future<void> _showBindDeviceDialogSafely(CareProvider provider) async {
+    provider.stopAutoRefresh();
     final result = await showDialog<_BindDeviceResult>(
       context: context,
-      builder: (dialogContext) {
-        String? localError;
-        return StatefulBuilder(
-          builder: (dialogContext, setState) => AlertDialog(
-            backgroundColor: AppColors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            title: const Text(
-              '登记并绑定手环',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w900,
-                fontSize: 26,
-              ),
-            ),
-            content: SizedBox(
-              width: 420,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDialogField(
-                    controller: macController,
-                    label: '手环 MAC 地址',
-                    hintText: '例如 54:10:26:01:00:DF',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildDialogField(
-                    controller: nameController,
-                    label: '设备名称',
-                    hintText: '默认 T10-WATCH',
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '支持输入 12 位十六进制 MAC，系统会自动格式化。',
-                    style: TextStyle(color: AppColors.textSub, fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  if (localError != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      localError!,
-                      style: const TextStyle(
-                          color: Colors.redAccent, fontSize: 16),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text(
-                  '取消',
-                  style: TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  final normalizedMac = _normalizeMacInput(macController.text);
-                  if (!_isValidMac(normalizedMac)) {
-                    setState(() {
-                      localError = '请输入正确的手环 MAC 地址';
-                    });
-                    return;
-                  }
-
-                  Navigator.pop(
-                    dialogContext,
-                    _BindDeviceResult(
-                      macAddress: normalizedMac,
-                      deviceName: nameController.text.trim(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  '确认绑定',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => _BindDeviceDialog(
+        normalizeMacInput: _normalizeMacInput,
+        isValidMac: _isValidMac,
+      ),
     );
-
-    macController.dispose();
-    nameController.dispose();
-
+    if (mounted) {
+      provider.startAutoRefresh();
+    }
     if (result == null) return;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
 
     final success = await provider.bindSelfDevice(
       result.macAddress,
@@ -688,42 +603,6 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
         ),
         backgroundColor: success ? Colors.green.shade700 : Colors.red.shade700,
       ),
-    );
-  }
-
-  Widget _buildDialogField({
-    required TextEditingController controller,
-    required String label,
-    required String hintText,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textMain, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          style: const TextStyle(color: AppColors.textMain, fontSize: 18, fontWeight: FontWeight.bold),
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: const TextStyle(color: AppColors.textMuted),
-            filled: true,
-            fillColor: Colors.white,
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: AppColors.border, width: 1.5),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -759,4 +638,210 @@ class _BindDeviceResult {
     required this.macAddress,
     required this.deviceName,
   });
+}
+
+class _BindDeviceDialog extends StatefulWidget {
+  final String Function(String rawValue) normalizeMacInput;
+  final bool Function(String value) isValidMac;
+
+  const _BindDeviceDialog({
+    required this.normalizeMacInput,
+    required this.isValidMac,
+  });
+
+  @override
+  State<_BindDeviceDialog> createState() => _BindDeviceDialogState();
+}
+
+class _BindDeviceDialogState extends State<_BindDeviceDialog> {
+  late final TextEditingController _macController;
+  late final TextEditingController _nameController;
+  String? _localError;
+
+  @override
+  void initState() {
+    super.initState();
+    _macController = TextEditingController();
+    _nameController = TextEditingController(text: 'T10-WATCH');
+  }
+
+  @override
+  void dispose() {
+    _macController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final normalizedMac = widget.normalizeMacInput(_macController.text);
+    if (!widget.isValidMac(normalizedMac)) {
+      setState(() {
+        _localError = '请输入正确的手环 MAC 地址';
+      });
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _BindDeviceResult(
+        macAddress: normalizedMac,
+        deviceName: _nameController.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+      title: const Text(
+        '登记并绑定手环',
+        style: TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w900,
+          fontSize: 26,
+        ),
+      ),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _BindDeviceDialogField(
+              controller: _macController,
+              label: '手环 MAC 地址',
+              hintText: '例如 54:10:26:01:00:DF',
+              textInputAction: TextInputAction.next,
+              onChanged: (_) {
+                if (_localError != null) {
+                  setState(() {
+                    _localError = null;
+                  });
+                }
+              },
+              onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+            ),
+            const SizedBox(height: 12),
+            _BindDeviceDialogField(
+              controller: _nameController,
+              label: '设备名称',
+              hintText: '默认 T10-WATCH',
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '支持输入 12 位十六进制 MAC，系统会自动格式化。',
+              style: TextStyle(
+                color: AppColors.textSub,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (_localError != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _localError!,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            '取消',
+            style: TextStyle(
+              color: AppColors.textSub,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: const Text(
+            '确认绑定',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w900,
+              fontSize: 20,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BindDeviceDialogField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hintText;
+  final TextInputAction textInputAction;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+
+  const _BindDeviceDialogField({
+    required this.controller,
+    required this.label,
+    required this.hintText,
+    required this.textInputAction,
+    this.onChanged,
+    this.onSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textMain,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          autocorrect: false,
+          enableSuggestions: false,
+          textInputAction: textInputAction,
+          style: const TextStyle(
+            color: AppColors.textMain,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: const TextStyle(color: AppColors.textMuted),
+            filled: true,
+            fillColor: Colors.white,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.border,
+                width: 1.5,
+              ),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

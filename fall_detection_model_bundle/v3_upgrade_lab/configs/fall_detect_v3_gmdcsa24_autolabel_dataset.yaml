@@ -1,0 +1,13 @@
+path: D:/Program/health(5-12)/fall_detection_model_bundle/v3_upgrade_lab/datasets/fall_detect_v3_gmdcsa24_autolabel
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: person
+  1: fall
+  2: fallen
+  3: lying
+  4: sitting
+  5: bending
+  6: kneeling
+  7: standing

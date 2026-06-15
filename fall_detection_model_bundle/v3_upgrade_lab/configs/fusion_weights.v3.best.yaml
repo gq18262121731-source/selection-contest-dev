@@ -1,0 +1,11 @@
+fall_v3_final_promoted_candidate:
+  description: Generated candidate from replay fusion search. Requires manual promotion
+    after full replay.
+  threshold: 0.42
+  alert_hold: 3
+  weights:
+    gru: 0.12
+    hybrid: 0.55
+    semantic: 0.0
+    posture: 0.35
+    detector: 0.1

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from types import SimpleNamespace
 
 from backend.api import care_api, device_api
 from backend.models.auth_model import SessionUser
 from backend.config import Settings
+from backend.models.device_bind_model import DeviceBindRequest, DeviceRebindRequest
 from backend.models.device_model import (
     DeviceBindStatus,
     DeviceIngestMode,
@@ -476,3 +478,203 @@ def test_serial_target_switch_api_returns_new_target(monkeypatch, tmp_path) -> N
     assert result.previous_target_mac == second.mac_address
     assert result.active_target_device_name == first.device_name
     assert service.get_active_serial_target_mac() == first.mac_address
+
+
+def test_bind_device_switch_to_serial_refreshes_active_target(tmp_path) -> None:
+    user_service = UserService()
+    elder = user_service.seed_elder(
+        user_id="user-elder-bind-switch",
+        name="杩愯鍒囨崲鑰佷汉",
+        phone="13900001234",
+        password="123456",
+        age=78,
+        apartment="8-801",
+    )
+    service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'device-bind-switch.db').as_posix()}",
+    )
+    serial_target = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:41",
+            device_name="T10-WATCH",
+            user_id=elder.id,
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+    ble_device = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:42",
+            device_name="T10-WATCH-B",
+            ingest_mode=DeviceIngestMode.BLE,
+        )
+    )
+    assert service.get_active_serial_target_mac() == serial_target.mac_address
+
+    service.bind_device(
+        DeviceBindRequest(
+            mac_address=ble_device.mac_address,
+            target_user_id=elder.id,
+            new_ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+
+    assert service.get_active_serial_target_mac() == ble_device.mac_address
+
+
+def test_binding_existing_serial_device_makes_it_active_target_even_if_newer_target_exists(tmp_path) -> None:
+    user_service = UserService()
+    elder = user_service.seed_elder(
+        user_id="user-elder-bind-existing-serial",
+        name="重新绑定老人",
+        phone="13900002222",
+        password="123456",
+        age=79,
+        apartment="9-901",
+    )
+    service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'device-bind-existing-serial.db').as_posix()}",
+    )
+    older_serial = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:51",
+            device_name="T10-WATCH",
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+    newer_serial = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:52",
+            device_name="T10-WATCH-B",
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+
+    assert service.get_active_serial_target_mac() == newer_serial.mac_address
+
+    service.bind_device(
+        DeviceBindRequest(
+            mac_address=older_serial.mac_address,
+            target_user_id=elder.id,
+        )
+    )
+
+    assert service.get_active_serial_target_mac() == older_serial.mac_address
+
+
+def test_rebinding_existing_serial_device_makes_it_active_target_even_if_newer_target_exists(tmp_path) -> None:
+    user_service = UserService()
+    old_elder = user_service.seed_elder(
+        user_id="user-elder-old-owner",
+        name="旧归属老人",
+        phone="13900003333",
+        password="123456",
+        age=80,
+        apartment="10-1001",
+    )
+    new_elder = user_service.seed_elder(
+        user_id="user-elder-new-owner",
+        name="新归属老人",
+        phone="13900004444",
+        password="123456",
+        age=78,
+        apartment="10-1002",
+    )
+    service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'device-rebind-existing-serial.db').as_posix()}",
+    )
+    older_serial = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:61",
+            device_name="T10-WATCH",
+            user_id=old_elder.id,
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+    newer_serial = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:62",
+            device_name="T10-WATCH-B",
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+
+    assert service.get_active_serial_target_mac() == newer_serial.mac_address
+
+    service.rebind_device(
+        DeviceRebindRequest(
+            mac_address=older_serial.mac_address,
+            new_user_id=new_elder.id,
+        )
+    )
+
+    assert service.get_active_serial_target_mac() == older_serial.mac_address
+
+
+def test_unbind_self_prioritizes_active_serial_target(monkeypatch, tmp_path) -> None:
+    user_service = UserService()
+    elder = user_service.seed_elder(
+        user_id="elder-unbind-self",
+        name="解绑自测老人",
+        phone="13900001111",
+        password="123456",
+        age=77,
+        apartment="6-601",
+    )
+    service = DeviceService(
+        user_service,
+        database_url=f"sqlite+aiosqlite:///{(tmp_path / 'device-unbind-self.db').as_posix()}",
+    )
+    first = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:31",
+            device_name="T10-WATCH-A",
+            user_id=elder.id,
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+    second = service.register_device(
+        DeviceRegisterRequest(
+            mac_address="54:10:26:01:00:32",
+            device_name="T10-WATCH-B",
+            user_id=elder.id,
+            ingest_mode=DeviceIngestMode.SERIAL,
+        )
+    )
+    service.set_active_serial_target(first.mac_address)
+
+    monkeypatch.setattr(device_api, "get_device_service", lambda: service)
+    monkeypatch.setattr(
+        device_api,
+        "get_care_service",
+        lambda: SimpleNamespace(
+            get_directory=lambda: SimpleNamespace(
+                elders=[
+                    SimpleNamespace(
+                        id=elder.id,
+                        device_mac=first.mac_address,
+                        device_macs=[first.mac_address, second.mac_address],
+                    )
+                ]
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        device_api,
+        "require_session_user",
+        lambda _authorization: SessionUser(
+            id=elder.id,
+            username="elder-unbind-self",
+            name="解绑自测老人",
+            role=UserRole.ELDER,
+            community_id="C10001",
+        ),
+    )
+
+    result = asyncio.run(device_api.unbind_device_self(authorization="Bearer demo-token"))
+
+    assert result.device_id == first.id
+    assert service.get_device(first.mac_address).bind_status == DeviceBindStatus.UNBOUND
+    assert service.get_device(second.mac_address).bind_status == DeviceBindStatus.BOUND

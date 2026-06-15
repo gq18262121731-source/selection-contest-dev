@@ -35,6 +35,12 @@ class _ElderAgentScreenState extends State<ElderAgentScreen> {
       if (!mounted) {
         return;
       }
+      final voiceProvider = context.read<VoiceProvider>();
+      if (voiceProvider.status == VoiceLoadStatus.initial ||
+          voiceProvider.status == VoiceLoadStatus.error ||
+          !voiceProvider.isVoiceAvailable) {
+        voiceProvider.checkStatus();
+      }
       context.read<CareProvider>().fetchProfile();
       context.read<AgentProvider>().init(_experience.introMessage);
     });

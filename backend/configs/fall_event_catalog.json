@@ -1,0 +1,109 @@
+[
+  {
+    "code": "confirmed_fall_critical",
+    "name": "确认跌倒-高危",
+    "state_in": ["confirmed_fall", "emergency", "needs_assistance"],
+    "severity_in": ["L3", "L4", "L5"],
+    "injury_level_in": ["I3", "I4", "I5"],
+    "alert_level": "CRITICAL",
+    "show_immediate_popup": true,
+    "requires_multimodal_review": true,
+    "ui_template_pool": [
+      {
+        "title": "检测到老人跌倒，请立即处理",
+        "lead": "系统已识别到高风险跌倒事件，建议立即查看现场并联系护理人员。"
+      },
+      {
+        "title": "高风险跌倒告警",
+        "lead": "当前事件已达到紧急级别，请尽快确认老人状态并准备协助。"
+      }
+    ],
+    "recommended_actions": ["立即查看现场", "联系护理人员", "必要时联系急救"]
+  },
+  {
+    "code": "confirmed_fall_warning",
+    "name": "确认跌倒-预警",
+    "state_in": ["confirmed_fall"],
+    "alert_level": "WARNING",
+    "show_immediate_popup": true,
+    "requires_multimodal_review": true,
+    "ui_template_pool": [
+      {
+        "title": "系统确认跌倒，请尽快复核",
+        "lead": "模型已确认跌倒事件，建议立即查看视频和老人状态。"
+      },
+      {
+        "title": "跌倒告警已触发",
+        "lead": "系统判断当前事件较大概率为真实跌倒，请尽快确认现场。"
+      }
+    ],
+    "recommended_actions": ["查看现场视频", "确认是否能自主起身", "联系家属或护理人员"]
+  },
+  {
+    "code": "suspected_fall_high_risk",
+    "name": "疑似跌倒-高风险",
+    "state_in": ["suspected_fall"],
+    "min_fall_score": 0.2,
+    "min_down_seconds": 0.8,
+    "alert_level": "WARNING",
+    "show_immediate_popup": true,
+    "requires_multimodal_review": true,
+    "ui_template_pool": [
+      {
+        "title": "检测到疑似跌倒，请立即查看",
+        "lead": "系统已发现老人疑似跌倒，正在进一步复核现场，请先关注画面。"
+      },
+      {
+        "title": "老人疑似跌倒",
+        "lead": "当前姿态存在较高跌倒风险，建议马上确认老人状态。"
+      }
+    ],
+    "recommended_actions": ["立即查看现场", "观察老人是否起身", "等待二次复核结果"]
+  },
+  {
+    "code": "post_fall_monitoring",
+    "name": "跌倒后持续监测",
+    "state_in": ["post_fall_monitoring", "injury_watch"],
+    "alert_level": "NOTICE",
+    "show_immediate_popup": true,
+    "requires_multimodal_review": true,
+    "ui_template_pool": [
+      {
+        "title": "系统正在持续观察老人状态",
+        "lead": "检测到跌倒后监测阶段，正在评估老人是否恢复正常。"
+      }
+    ],
+    "recommended_actions": ["持续观察", "等待复核结果", "必要时人工介入"]
+  },
+  {
+    "code": "abnormal_recovery",
+    "name": "恢复异常",
+    "state_in": ["abnormal_recovery"],
+    "alert_level": "CRITICAL",
+    "show_immediate_popup": true,
+    "requires_multimodal_review": true,
+    "ui_template_pool": [
+      {
+        "title": "老人恢复异常，请尽快协助",
+        "lead": "系统判断老人跌倒后恢复情况异常，建议立即人工确认。"
+      }
+    ],
+    "recommended_actions": ["立即人工查看", "确认意识和活动情况", "必要时联系医疗支持"]
+  },
+  {
+    "code": "possible_false_positive",
+    "name": "疑似误报候选",
+    "state_in": ["suspected_fall"],
+    "max_fall_score": 0.19,
+    "alert_level": "NOTICE",
+    "show_immediate_popup": true,
+    "requires_multimodal_review": true,
+    "ui_template_pool": [
+      {
+        "title": "检测到异常姿态，系统正在复核",
+        "lead": "当前更像异常动作或姿态切换，系统正在做进一步分析，请稍等。"
+      }
+    ],
+    "recommended_actions": ["等待二次复核", "关注画面变化"]
+  }
+]

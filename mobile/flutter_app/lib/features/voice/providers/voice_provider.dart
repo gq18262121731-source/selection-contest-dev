@@ -57,16 +57,19 @@ class VoiceProvider extends ChangeNotifier {
 
   Future<void> startRecording() async {
     if (!isVoiceAvailable) {
-      debugPrint('Voice service is unavailable, skip recording.');
+      _errorMessage = '语音服务未就绪，请先检查后端语音配置。';
+      notifyListeners();
       return;
     }
 
     final path = await _audioService.startRecording();
     if (path == null) {
-      debugPrint('Failed to start recording.');
+      _errorMessage = '录音启动失败，请检查麦克风权限。';
+      notifyListeners();
       return;
     }
 
+    _errorMessage = null;
     _isRecording = true;
     notifyListeners();
   }
@@ -84,20 +87,23 @@ class VoiceProvider extends ChangeNotifier {
 
     final path = await _audioService.stopRecording();
     if (path == null) {
-      debugPrint('stopRecording returned null path.');
+      _errorMessage = '录音保存失败，请重试。';
+      notifyListeners();
       return null;
     }
 
     await Future<void>.delayed(const Duration(milliseconds: 300));
     final file = File(path);
     if (!await file.exists()) {
-      debugPrint('Recorded file does not exist: $path');
+      _errorMessage = '录音文件不存在，请重新录音。';
+      notifyListeners();
       return null;
     }
 
     final size = await file.length();
     if (size <= 0) {
-      debugPrint('Recorded file is empty: $path');
+      _errorMessage = '录音内容为空，请重新录音。';
+      notifyListeners();
       return null;
     }
 
@@ -112,6 +118,8 @@ class VoiceProvider extends ChangeNotifier {
 
   Future<void> processOmniChat(String audioPath, {String? deviceMac}) async {
     if (!isVoiceAvailable) {
+      _errorMessage = '语音服务未就绪，请先检查后端语音配置。';
+      notifyListeners();
       return;
     }
 
@@ -134,6 +142,8 @@ class VoiceProvider extends ChangeNotifier {
         await _audioService.play(response.audioUrl);
       } else if (_lastAsrText.trim().isNotEmpty) {
         await processTts(_lastAsrText);
+      } else {
+        _errorMessage = '语音服务未返回文字或音频结果。';
       }
     } catch (error) {
       debugPrint('OmniChat error: $error');
@@ -150,6 +160,8 @@ class VoiceProvider extends ChangeNotifier {
 
   Future<String?> processAsr(String base64Audio) async {
     if (!isVoiceAvailable) {
+      _errorMessage = '语音服务未就绪，请先检查后端语音配置。';
+      notifyListeners();
       return null;
     }
 
@@ -159,10 +171,14 @@ class VoiceProvider extends ChangeNotifier {
 
     try {
       final response = await _repository.speechToText(base64Audio);
+      if (!response.ok) {
+        throw Exception(response.error ?? '语音识别失败。');
+      }
       _lastAsrText = response.text;
       return _lastAsrText;
-    } catch (_) {
-      _errorMessage = '语音识别失败。';
+    } catch (error) {
+      final message = error.toString().replaceFirst('Exception: ', '').trim();
+      _errorMessage = message.isEmpty ? '语音识别失败。' : message;
       return null;
     } finally {
       _isProcessing = false;
@@ -171,17 +187,35 @@ class VoiceProvider extends ChangeNotifier {
   }
 
   Future<void> processTts(String text) async {
-    if (!isVoiceAvailable || text.trim().isEmpty) {
+    if (text.trim().isEmpty) {
+      return;
+    }
+
+    if (!isVoiceAvailable) {
+      _errorMessage = '语音服务未就绪，请先检查后端语音配置。';
+      notifyListeners();
       return;
     }
 
     _isProcessing = true;
     _errorMessage = null;
+    _lastTtsUrl = '';
     notifyListeners();
 
     try {
       final response = await _repository.textToSpeech(text);
+      if (!response.ok) {
+        _errorMessage = response.error?.trim().isNotEmpty == true
+            ? response.error
+            : '语音播报失败。';
+        return;
+      }
+
       _lastTtsUrl = response.audioUrl;
+      if (!response.hasAudio) {
+        _errorMessage = '语音服务未返回可播放音频。';
+        return;
+      }
 
       if (response.audioBase64.trim().isNotEmpty) {
         await _audioService.playBase64(response.audioBase64, response.format);
@@ -194,6 +228,8 @@ class VoiceProvider extends ChangeNotifier {
             .replaceAll('//', '/')
             .replaceFirst(':/', '://');
         await _audioService.play(finalUrl);
+      } else {
+        _errorMessage = '语音服务未返回可播放音频。';
       }
     } catch (error) {
       debugPrint('TTS error: $error');

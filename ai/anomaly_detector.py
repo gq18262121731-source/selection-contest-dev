@@ -252,9 +252,11 @@ class RealtimeAnomalyDetector:
     def _resolve_sos_trigger(sos_value: int | None, current_trigger: str | None) -> str | None:
         if current_trigger:
             return current_trigger
-        if sos_value == 0x02:
+        if sos_value is None:
+            return None
+        if sos_value & 0x02:
             return "long_press"
-        if sos_value == 0x01:
+        if sos_value & 0x01:
             return "double_click"
         return None
 

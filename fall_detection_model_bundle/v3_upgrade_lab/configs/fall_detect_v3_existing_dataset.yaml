@@ -1,0 +1,12 @@
+path: D:/Program/health(5-12)/fall_detection_model_bundle/v3_upgrade_lab/datasets/fall_detect_existing
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: person
+  1: fall
+  2: fallen
+  3: sitting
+  4: lying
+  5: bending

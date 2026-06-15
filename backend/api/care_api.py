@@ -66,6 +66,18 @@ def _demo_elder_device_macs(elder) -> set[str]:
     }
 
 
+def _normalize_dashboard_mac(value: str | None) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    compact = "".join(ch for ch in text if ch.isalnum()).upper()
+    if len(compact) == 12:
+        return ":".join(compact[index : index + 2] for index in range(0, 12, 2))
+    return text.upper()
+
+
 def _demo_accessible_devices_for_elders(elders: list[object], devices: list[DeviceRecord]) -> list[DeviceRecord]:
     elder_ids = {str(getattr(elder, "id", "")).strip() for elder in elders if getattr(elder, "id", None)}
     elder_device_macs = set().union(*(_demo_elder_device_macs(elder) for elder in elders)) if elders else set()
@@ -641,12 +653,20 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         ):
             bound_visible_device_by_elder_id[device.user_id] = device
 
-    active_alarm_counts = Counter(alarm.device_mac for alarm in alarms if not alarm.acknowledged)
+    active_alarm_counts = Counter(
+        mac
+        for alarm in alarms
+        if not alarm.acknowledged
+        for mac in [_normalize_dashboard_mac(alarm.device_mac)]
+        if mac
+    )
     active_sos_by_mac: dict[str, AlarmRecord] = {}
     for alarm in sorted(alarms, key=lambda item: item.created_at, reverse=True):
         if alarm.acknowledged or alarm.alarm_type != AlarmType.SOS:
             continue
-        active_sos_by_mac.setdefault(alarm.device_mac, alarm)
+        normalized_alarm_mac = _normalize_dashboard_mac(alarm.device_mac)
+        if normalized_alarm_mac:
+            active_sos_by_mac.setdefault(normalized_alarm_mac, alarm)
     visible_device_macs = {
         device.mac_address for device in devices if _device_can_show_live_dashboard_data(device)
     }
@@ -672,7 +692,9 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         )
         device = next((item for item in devices if item.mac_address == device_mac), None) if device_mac else None
         sample = latest_by_mac.get(device_mac) if _device_can_show_live_dashboard_data(device) else None
-        active_alarm_count = active_alarm_counts.get(device_mac or "", 0)
+        normalized_device_mac = _normalize_dashboard_mac(device_mac)
+        active_alarm_count = active_alarm_counts.get(normalized_device_mac, 0) if normalized_device_mac else 0
+        active_sos_alarm = active_sos_by_mac.get(normalized_device_mac) if normalized_device_mac else None
         if device is None:
             risk_level = "low"
             risk_score = 0
@@ -718,6 +740,13 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
                 temperature=sample.temperature if sample and device and device.status != DeviceStatus.OFFLINE else None,
                 steps=sample.steps if sample and device and device.status != DeviceStatus.OFFLINE else None,
                 active_alarm_count=active_alarm_count,
+                sos_active=active_sos_alarm is not None,
+                active_sos_alarm_id=active_sos_alarm.id if active_sos_alarm else None,
+                active_sos_trigger=(
+                    str(active_sos_alarm.metadata.get("sos_trigger"))
+                    if active_sos_alarm and active_sos_alarm.metadata.get("sos_trigger")
+                    else None
+                ),
                 structured_health=structured if device and device.status != DeviceStatus.OFFLINE else None,
             )
         )
@@ -726,7 +755,8 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         elder = elder_by_device_mac.get(device.mac_address) or elder_by_id.get(device.user_id or "")
         sample = latest_by_mac.get(device.mac_address) if _device_can_show_live_dashboard_data(device) else None
         effective_ingest_mode = get_effective_device_ingest_mode(device.mac_address, device.ingest_mode)
-        active_alarm_count = active_alarm_counts.get(device.mac_address, 0)
+        normalized_device_mac = _normalize_dashboard_mac(device.mac_address)
+        active_alarm_count = active_alarm_counts.get(normalized_device_mac, 0) if normalized_device_mac else 0
         risk_level, _, risk_reasons = _sample_health_risk_reasons(
             device_status=device.status.value,
             latest_health_score=sample.health_score if sample else None,
@@ -739,7 +769,7 @@ async def get_community_dashboard(authorization: str | None = Header(default=Non
         structured = structured_by_device.get(device.mac_address) if _device_can_show_live_dashboard_data(device) else None
         dashboard_risk_level = _dashboard_risk_from_structured(structured, risk_level)
         dashboard_reasons = _dashboard_reasons_from_structured(structured, risk_reasons)
-        active_sos_alarm = active_sos_by_mac.get(device.mac_address)
+        active_sos_alarm = active_sos_by_mac.get(normalized_device_mac) if normalized_device_mac else None
         device_statuses.append(
             CommunityDashboardDeviceItem(
                 device_mac=device.mac_address,

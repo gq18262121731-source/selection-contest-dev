@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from agent.analysis_service import HealthDataAnalysisService
 from agent.context_assembler import AgentContextAssembler
@@ -20,16 +22,22 @@ from ai.data_generator import SyntheticHealthDataGenerator
 from ai.health_score_model import BaselineTracker, HealthScoreService as DemoHealthScoreService
 from backend.config import get_settings
 from backend.models.auth_model import SessionUser
+from backend.models.alarm_model import AlarmLayer, AlarmPriority, AlarmRecord, AlarmType
 from backend.models.device_model import DeviceIngestMode, DeviceRecord, DeviceStatus, ingest_source_matches_mode
 from backend.models.health_model import HealthSample, IngestResponse, IngestionSource
 from backend.models.analytics_model import AgentElderSubject, WindowKind
 from backend.models.user_model import UserRole
 from backend.ml.inference import HealthInferenceEngine
 from backend.repositories.score_repo import ScoreRepository
+from backend.repositories.mobile_push_device_repo import MobilePushDeviceRepository
 from backend.repositories.warning_repo import WarningRepository
 from backend.repositories.wearable_repo import WearableRepository
 from backend.services.alarm_priority_queue import AlarmPriorityQueue
 from backend.services.alarm_service import AlarmService
+from backend.services.camera_audio_hub import CameraAudioHub
+from backend.services.camera_setup_config_service import CameraSetupConfigService
+from backend.services.camera_source_registry import CameraSourceRegistry
+from backend.services.camera_stream_hub import CameraDetectionFrameHub, CameraFrameHub, CameraPoseFrameHub, CombinedProcessedFrameHub
 from backend.services.community_insight_service import CommunityInsightService
 from backend.services.care_service import CareService
 from backend.services.device_service import DeviceService
@@ -37,15 +45,28 @@ from backend.services.explanation_service import ExplanationService
 from backend.services.health_data_repository import HealthDataRepository
 from backend.services.health_score_service import HealthScoreService as StructuredHealthScoreService
 from backend.services.health_stability_service import HealthStabilityService
+from backend.services.model_finetune_service import ModelFinetuneService
 from backend.services.notification_service import NotificationService
+from backend.services.optional_reid_embedding_service import OptionalReidEmbeddingService
+from backend.services.posture_event_service import PostureEventService
+from backend.services.posture_knowledge_service import PostureKnowledgeService
 from backend.services.relation_service import RelationService
 from backend.services.stream_service import StreamService
+from backend.services.external_camera_bridge_service import ExternalCameraBridgeService
+from backend.services.fall_frame_test_service import FallFrameTestService
+from backend.services.target_pose_service import TargetPoseService
+from backend.services.target_user_fall_service import TargetUserFallService
+from backend.services.target_user_service import TargetUserService
 from backend.services.user_service import UserService
+from backend.services.video_adapter import VideoAnalysisAdapter
+from backend.services.video_bridge_service import VideoBridgeService
 from backend.services.warning_service import WarningService
 from backend.services.websocket_manager import WebSocketManager
+from backend.schemas.health import VitalSignsPayload
 from iot.parser import T10PacketParser
 
 
+logger = logging.getLogger(__name__)
 _settings = get_settings()
 _user_service = UserService()
 _relation_service = RelationService(_user_service)
@@ -142,6 +163,25 @@ _structured_health_score_service = StructuredHealthScoreService(
 )
 _warning_service = WarningService(health_score_service=_structured_health_score_service)
 _last_community_alarm_at: datetime | None = None
+_mobile_push_device_repo: MobilePushDeviceRepository | None = None
+_target_user_service: TargetUserService | None = None
+_target_pose_service: TargetPoseService | None = None
+_posture_event_service: PostureEventService | None = None
+_posture_knowledge_service: PostureKnowledgeService | None = None
+_target_user_fall_service: TargetUserFallService | None = None
+_external_camera_bridge_service: ExternalCameraBridgeService | None = None
+_video_bridge_service: VideoBridgeService | None = None
+_model_finetune_service: ModelFinetuneService | None = None
+_camera_frame_hub: CameraFrameHub | None = None
+_camera_detection_frame_hub: CameraDetectionFrameHub | None = None
+_camera_pose_frame_hub: CameraPoseFrameHub | None = None
+_camera_processed_frame_hub: CombinedProcessedFrameHub | None = None
+_camera_audio_hub: CameraAudioHub | None = None
+_camera_source_registry: CameraSourceRegistry | None = None
+_camera_setup_config_service: CameraSetupConfigService | None = None
+_camera_source_frame_hubs: dict[str, CameraFrameHub] = {}
+_camera_source_audio_hubs: dict[str, CameraAudioHub] = {}
+_camera_source_processed_hubs: dict[str, CombinedProcessedFrameHub] = {}
 
 
 # NOTE: ingest_sample is defined further below (after helper functions)
@@ -397,6 +437,192 @@ def get_structured_health_score_service() -> StructuredHealthScoreService:
 
 def get_warning_evaluation_service() -> WarningService:
     return _warning_service
+
+
+def get_mobile_push_device_repo() -> MobilePushDeviceRepository:
+    global _mobile_push_device_repo
+    if _mobile_push_device_repo is None:
+        _mobile_push_device_repo = MobilePushDeviceRepository(_settings.database_url)
+    return _mobile_push_device_repo
+
+
+def get_posture_event_service() -> PostureEventService:
+    global _posture_event_service
+    if _posture_event_service is None:
+        _posture_event_service = PostureEventService()
+    return _posture_event_service
+
+
+def get_posture_knowledge_service() -> PostureKnowledgeService:
+    global _posture_knowledge_service
+    if _posture_knowledge_service is None:
+        _posture_knowledge_service = PostureKnowledgeService(
+            resources_root=_settings.data_dir.parent / "backend" / "resources"
+        )
+    return _posture_knowledge_service
+
+
+def get_target_user_service() -> TargetUserService:
+    global _target_user_service
+    if _target_user_service is None:
+        _target_user_service = TargetUserService(
+            data_root=_settings.data_dir,
+            model_root=Path(_settings.fall_detection_model_root),
+        )
+    return _target_user_service
+
+
+def get_target_pose_service() -> TargetPoseService:
+    global _target_pose_service
+    if _target_pose_service is None:
+        _target_pose_service = TargetPoseService(
+            model_root=Path(_settings.fall_detection_model_root),
+        )
+    return _target_pose_service
+
+
+def get_target_user_fall_service() -> TargetUserFallService:
+    global _target_user_fall_service
+    if _target_user_fall_service is None:
+        _target_user_fall_service = TargetUserFallService(
+            data_root=_settings.data_dir,
+            model_root=Path(_settings.fall_detection_model_root),
+            target_user_service=get_target_user_service(),
+            target_pose_service=get_target_pose_service(),
+            posture_event_service=get_posture_event_service(),
+            posture_knowledge_service=get_posture_knowledge_service(),
+        )
+    return _target_user_fall_service
+
+
+def get_external_camera_bridge_service() -> ExternalCameraBridgeService:
+    global _external_camera_bridge_service
+    if _external_camera_bridge_service is None:
+        _external_camera_bridge_service = ExternalCameraBridgeService(
+            data_root=_settings.data_dir,
+            target_user_fall_service=get_target_user_fall_service(),
+        )
+    return _external_camera_bridge_service
+
+
+def get_video_bridge_service() -> VideoBridgeService:
+    global _video_bridge_service
+    if _video_bridge_service is None:
+        _video_bridge_service = VideoBridgeService(
+            VideoAnalysisAdapter(),
+            settings=_settings,
+            alarm_ingest_callback=_ingest_video_bridge_alarm_event,
+        )
+    return _video_bridge_service
+
+
+def get_model_finetune_service() -> ModelFinetuneService:
+    global _model_finetune_service
+    if _model_finetune_service is None:
+        _model_finetune_service = ModelFinetuneService(project_root=_settings.data_dir.parent)
+    return _model_finetune_service
+
+
+def get_camera_frame_hub() -> CameraFrameHub:
+    global _camera_frame_hub
+    if _camera_frame_hub is None:
+        _camera_frame_hub = CameraFrameHub(_settings)
+    return _camera_frame_hub
+
+
+def get_camera_detection_frame_hub() -> CameraDetectionFrameHub:
+    global _camera_detection_frame_hub
+    if _camera_detection_frame_hub is None:
+        _camera_detection_frame_hub = CameraDetectionFrameHub(
+            _settings,
+            event_provider=lambda: None,
+        )
+    return _camera_detection_frame_hub
+
+
+def get_camera_pose_frame_hub() -> CameraPoseFrameHub:
+    global _camera_pose_frame_hub
+    if _camera_pose_frame_hub is None:
+        _camera_pose_frame_hub = CameraPoseFrameHub(
+            _settings,
+            payload_provider=lambda: None,
+        )
+    return _camera_pose_frame_hub
+
+
+def get_camera_processed_frame_hub() -> CombinedProcessedFrameHub:
+    global _camera_processed_frame_hub
+    if _camera_processed_frame_hub is None:
+        _camera_processed_frame_hub = CombinedProcessedFrameHub(
+            _settings,
+            pose_payload_provider=lambda: None,
+            fall_payload_provider=lambda: None,
+        )
+    return _camera_processed_frame_hub
+
+
+def get_camera_audio_hub() -> CameraAudioHub:
+    global _camera_audio_hub
+    if _camera_audio_hub is None:
+        _camera_audio_hub = CameraAudioHub(_settings)
+    return _camera_audio_hub
+
+
+def get_camera_source_registry() -> CameraSourceRegistry:
+    global _camera_source_registry
+    if _camera_source_registry is None:
+        _camera_source_registry = CameraSourceRegistry(_settings)
+    return _camera_source_registry
+
+
+def get_camera_setup_config_service() -> CameraSetupConfigService:
+    global _camera_setup_config_service
+    if _camera_setup_config_service is None:
+        _camera_setup_config_service = CameraSetupConfigService(_settings, get_camera_source_registry())
+    return _camera_setup_config_service
+
+
+def get_camera_source_settings(camera_id: str):
+    return get_camera_source_registry().settings_for(camera_id)
+
+
+def get_camera_source_frame_hub(camera_id: str) -> CameraFrameHub:
+    normalized = camera_id.strip().lower()
+    hub = _camera_source_frame_hubs.get(normalized)
+    if hub is None:
+        hub = CameraFrameHub(get_camera_source_settings(camera_id))
+        _camera_source_frame_hubs[normalized] = hub
+    return hub
+
+
+def get_camera_source_audio_hub(camera_id: str) -> CameraAudioHub:
+    normalized = camera_id.strip().lower()
+    hub = _camera_source_audio_hubs.get(normalized)
+    if hub is None:
+        hub = CameraAudioHub(get_camera_source_settings(camera_id))
+        _camera_source_audio_hubs[normalized] = hub
+    return hub
+
+
+def get_camera_source_processed_frame_hub(camera_id: str) -> CombinedProcessedFrameHub:
+    normalized = camera_id.strip().lower()
+    hub = _camera_source_processed_hubs.get(normalized)
+    if hub is None:
+        hub = CombinedProcessedFrameHub(
+            get_camera_source_settings(camera_id),
+            pose_payload_provider=lambda: None,
+            fall_payload_provider=lambda: None,
+        )
+        _camera_source_processed_hubs[normalized] = hub
+    return hub
+
+
+async def shutdown_camera_source_hubs() -> None:
+    for hub in list(_camera_source_audio_hubs.values()):
+        await hub.shutdown()
+    _camera_source_audio_hubs.clear()
+    _camera_source_processed_hubs.clear()
+    _camera_source_frame_hubs.clear()
 
 
 def get_effective_device_ingest_mode(
@@ -970,7 +1196,7 @@ def _merge_with_latest(sample: HealthSample) -> HealthSample:
         update["heart_rate"] = latest.heart_rate
     if sample.blood_oxygen <= 0 and latest.blood_oxygen > 0:
         update["blood_oxygen"] = latest.blood_oxygen
-    if sample.temperature <= 0 and latest.temperature > 0:
+    if sample.temperature <= 0 and 35.0 <= latest.temperature <= 45.0:
         update["temperature"] = latest.temperature
 
     if (not sample.blood_pressure or sample.blood_pressure == "0/0") and latest.blood_pressure:
@@ -989,6 +1215,112 @@ def _merge_with_latest(sample: HealthSample) -> HealthSample:
     return sample.model_copy(update=update) if update else sample
 
 
+def _persist_structured_health_score(sample: HealthSample, device: DeviceRecord) -> None:
+    """Persist ML/rule split scores so dashboard can render rule/model breakdown."""
+    systolic, diastolic = sample.blood_pressure_pair
+    vitals = VitalSignsPayload(
+        heart_rate=float(sample.heart_rate),
+        spo2=float(sample.blood_oxygen),
+        sbp=float(systolic),
+        dbp=float(diastolic),
+        body_temp=float(sample.temperature),
+        fall_detection=False,
+        data_accuracy=100.0,
+    )
+    elderly_id = str(device.user_id or f"UNBOUND:{sample.device_mac}")
+    try:
+        _structured_health_score_service.evaluate_vitals(
+            vitals=vitals,
+            elderly_id=elderly_id,
+            device_id=sample.device_mac,
+            timestamp=sample.timestamp,
+            persist=True,
+            stateful_stability=True,
+        )
+    except Exception as exc:
+        logger.warning(
+            "Structured score persistence failed for %s: %s",
+            sample.device_mac,
+            exc,
+        )
+        fallback_score = float(sample.health_score or 0)
+        if fallback_score >= 85:
+            fallback_risk_level = "normal"
+        elif fallback_score >= 70:
+            fallback_risk_level = "attention"
+        elif fallback_score >= 55:
+            fallback_risk_level = "warning"
+        else:
+            fallback_risk_level = "critical"
+
+        fallback_tags: list[str] = []
+        fallback_reasons: list[str] = []
+        if sample.sos_flag:
+            fallback_tags.append("sos")
+            fallback_reasons.append("Detected SOS signal from device")
+        if sample.blood_oxygen < 93:
+            fallback_tags.append("spo2_low")
+            fallback_reasons.append(f"SpO2 is low ({sample.blood_oxygen}%)")
+        if sample.heart_rate > 120 or sample.heart_rate < 50:
+            fallback_tags.append("heart_rate_abnormal")
+            fallback_reasons.append(f"Heart rate out of preferred range ({sample.heart_rate} bpm)")
+        if sample.temperature >= 37.6:
+            fallback_tags.append("temperature_high")
+            fallback_reasons.append(f"Body temperature elevated ({sample.temperature:.1f} C)")
+
+        fallback_payload = {
+            "elderly_id": elderly_id,
+            "device_id": sample.device_mac,
+            "timestamp": sample.timestamp.isoformat(),
+            "health_score": round(fallback_score, 4),
+            "final_health_score": round(fallback_score, 4),
+            "rule_health_score": round(fallback_score, 4),
+            "model_health_score": round(fallback_score, 4),
+            "risk_level": fallback_risk_level,
+            "risk_score_raw": round(max(0.0, min(1.0, 1.0 - (fallback_score / 100.0))), 6),
+            "sub_scores": {
+                "rule_health_score": round(fallback_score, 4),
+                "model_health_score": round(fallback_score, 4),
+                "final_health_score": round(fallback_score, 4),
+            },
+            "alerts": {
+                "hr_alert": {"label": "High" if sample.heart_rate > 120 else ("Low" if sample.heart_rate < 50 else "Normal"), "probability": None},
+                "spo2_alert": {"label": "Low" if sample.blood_oxygen < 93 else "Normal", "probability": None},
+                "bp_alert": {"label": "Normal", "probability": None},
+                "temp_alert": {"label": "Abnormal" if sample.temperature >= 37.6 else "Normal", "probability": None},
+                "hard_threshold_level": fallback_risk_level if fallback_risk_level in {"warning", "critical"} else None,
+            },
+            "abnormal_tags": fallback_tags,
+            "trigger_reasons": fallback_reasons,
+            "recommendation_code": "EMERGENCY_CONTACT" if sample.sos_flag else "MONITOR",
+            "stability_mode": "rule_fallback",
+            "stabilized_vitals": {
+                "heart_rate": float(sample.heart_rate),
+                "spo2": float(sample.blood_oxygen),
+                "sbp": float(systolic),
+                "dbp": float(diastolic),
+                "body_temp": float(sample.temperature),
+                "fall_detection": False,
+                "data_accuracy": 100.0,
+            },
+            "active_events": [],
+            "score_adjustment_reason": "Structured model artifacts missing; fallback scores are used.",
+        }
+        try:
+            _score_repo.save_result(
+                elderly_id=elderly_id,
+                device_id=sample.device_mac,
+                timestamp=sample.timestamp,
+                result=fallback_payload,
+            )
+        except Exception as fallback_exc:
+            logger.warning(
+                "Structured fallback persistence failed for %s: %s",
+                sample.device_mac,
+                fallback_exc,
+            )
+
+
 async def ingest_sample(sample: HealthSample) -> IngestResponse:
     global _last_community_alarm_at
 
@@ -1000,6 +1332,8 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         raise RuntimeError("Device must be registered before ingest in formal mode")
 
     _device_service.update_status(sample.device_mac, DeviceStatus.ONLINE)
+
+    _alarm_service.observe_sample(sample)
 
     # 【性能优化】第一时间评估并提取实时告警（包括SOS）。直接评估未 merged 的 sample_0。
     realtime_alarms = _alarm_service.evaluate(sample)
@@ -1028,6 +1362,7 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
         timestamp=sample.timestamp,
     )
     _stream_service.publish(sample)
+    _persist_structured_health_score(sample, device)
 
     ml_alarms = []
     intelligent_result = _intelligent_scorer.infer_device(
@@ -1067,3 +1402,104 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
 
     all_alarms = (realtime_alarms or []) + (ml_alarms or [])
     return IngestResponse(success=True, message="Sample ingested", device_mac=sample.device_mac)
+
+
+async def _ingest_video_bridge_alarm_event(event: dict[str, object]) -> AlarmRecord | None:
+    metadata = dict(event.get("metadata") or {}) if isinstance(event.get("metadata"), dict) else {}
+    configured_device_id = str(
+        metadata.get("target_device_mac")
+        or event.get("device_mac")
+        or _settings.resolved_fall_detection_target_device_mac
+    ).strip().upper()
+    if not configured_device_id:
+        configured_device_id = "CAMERA-VIDEO-BRIDGE"
+
+    device_identity = configured_device_id
+    pseudo_mac = _video_bridge_pseudo_mac(device_identity)
+
+    _device_service.ensure_device(
+        pseudo_mac,
+        device_name="VIDEO-BRIDGE-CAMERA",
+        ingest_mode=DeviceIngestMode.MOCK,
+    )
+    _device_service.update_status(pseudo_mac, DeviceStatus.ONLINE)
+
+    state = str(event.get("state") or event.get("status") or "confirmed_fall").strip()
+    camera_id = str(event.get("camera_id") or "").strip()
+    risk = str(event.get("risk") or event.get("risk_level") or "high").strip()
+    fall_score_raw = event.get("fall_score") or event.get("fall_prob")
+    try:
+        fall_score = float(fall_score_raw) if fall_score_raw is not None else None
+    except (TypeError, ValueError):
+        fall_score = None
+
+    if fall_score is not None and fall_score >= 0.82:
+        level = AlarmPriority.CRITICAL
+    elif risk in {"critical", "high"}:
+        level = AlarmPriority.CRITICAL
+    else:
+        level = AlarmPriority.WARNING
+
+    message_parts = ["视频跌倒告警"]
+    if camera_id:
+        message_parts.append(f"camera={camera_id}")
+    if state:
+        message_parts.append(f"state={state}")
+    if fall_score is not None:
+        message_parts.append(f"score={fall_score:.2f}")
+    message = " | ".join(message_parts)
+
+    enriched_metadata = {
+        **metadata,
+        "source": event.get("source") or "vision_service",
+        "trigger": metadata.get("trigger") or "video_bridge_fall_events",
+        "target_device_mac": device_identity,
+        "target_device_pseudo_mac": pseudo_mac,
+        "camera_id": camera_id,
+        "stream_name": event.get("stream_name"),
+        "incident_id": event.get("incident_id"),
+        "track_id": event.get("track_id"),
+        "snapshot_url": event.get("snapshot_url") or event.get("snapshot_path"),
+        "risk": risk,
+        "state": state,
+        "event_type": event.get("event_type") or "fall_confirmed",
+        "fall_score": fall_score,
+        "raw_event": event,
+        "is_real_device": True,
+    }
+
+    alarm = AlarmRecord(
+        device_mac=pseudo_mac,
+        alarm_type=AlarmType.VIDEO_FALL,
+        alarm_level=level,
+        alarm_layer=AlarmLayer.INTELLIGENT,
+        message=message,
+        anomaly_probability=fall_score,
+        metadata=enriched_metadata,
+    )
+
+    emitted = _alarm_service.evaluate_alarm_records([alarm])
+    if not emitted:
+        return None
+
+    _health_data_repository.persist_alerts(emitted)
+    for created_alarm in emitted:
+        await _websocket_manager.broadcast_alarm(created_alarm.model_dump(mode="json"))
+    await _websocket_manager.broadcast_alarm_queue(
+        {
+            "type": "alarm_queue",
+            "queue": [item.model_dump(mode="json") for item in _alarm_service.queue_items(active_only=True)],
+            "snapshot": _alarm_service.queue_snapshot(),
+        }
+    )
+    return emitted[0]
+
+
+def _video_bridge_pseudo_mac(device_identity: str) -> str:
+    compact = "".join(ch for ch in str(device_identity or "").upper() if ch.isalnum())
+    if len(compact) == 12 and all(ch in "0123456789ABCDEF" for ch in compact):
+        return ":".join(compact[index : index + 2] for index in range(0, 12, 2))
+
+    digest = str(abs(hash(device_identity or "VIDEO-BRIDGE")) % 10**10).rjust(10, "0")
+    compact = f"AA{digest[:10]}".upper()
+    return ":".join(compact[index : index + 2] for index in range(0, 12, 2))
