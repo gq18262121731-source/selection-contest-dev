@@ -6,16 +6,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import torch
-from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
-
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
-from backend.models.fall_pose_tcn_model import FallPoseTCNModel
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,7 +38,33 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def fail_missing_dependency(name: str) -> None:
+    print(f"[FAIL] Missing dependency: {name}")
+    print("Please install project training dependencies before running this command.")
+    raise SystemExit(1)
+
+
+def import_training_dependencies():
+    try:
+        import torch
+        from torch import nn
+        from torch.utils.data import DataLoader, TensorDataset
+        from backend.models.fall_pose_tcn_model import FallPoseTCNModel
+    except ModuleNotFoundError as exc:
+        fail_missing_dependency(exc.name or "unknown")
+    return torch, nn, DataLoader, TensorDataset, FallPoseTCNModel
+
+
+def import_numpy():
+    try:
+        import numpy as np
+    except ModuleNotFoundError as exc:
+        fail_missing_dependency(exc.name or "numpy")
+    return np
+
+
 def load_dataset(path: Path) -> tuple[np.ndarray, np.ndarray, list[dict[str, Any]]]:
+    np = import_numpy()
     data = np.load(path, allow_pickle=True)
     x = data["x"].astype(np.float32)
     y = data["y"].astype(np.float32)
@@ -54,6 +73,7 @@ def load_dataset(path: Path) -> tuple[np.ndarray, np.ndarray, list[dict[str, Any
 
 
 def split_indices(y: np.ndarray, val_ratio: float) -> tuple[np.ndarray, np.ndarray]:
+    np = import_numpy()
     rng = np.random.default_rng(42)
     train_parts: list[np.ndarray] = []
     val_parts: list[np.ndarray] = []
@@ -71,6 +91,7 @@ def split_indices(y: np.ndarray, val_ratio: float) -> tuple[np.ndarray, np.ndarr
 
 
 def metrics_from_logits(logits: torch.Tensor, labels: torch.Tensor) -> dict[str, float]:
+    torch, _, _, _, _ = import_training_dependencies()
     probs = torch.sigmoid(logits)
     preds = (probs >= 0.5).float()
     tp = float(((preds == 1) & (labels == 1)).sum().item())
@@ -85,6 +106,8 @@ def metrics_from_logits(logits: torch.Tensor, labels: torch.Tensor) -> dict[str,
 
 
 def evaluate(model: FallPoseTCNModel, loader: DataLoader, device: torch.device, criterion: nn.Module) -> dict[str, float]:
+    np = import_numpy()
+    torch, _, _, _, _ = import_training_dependencies()
     model.eval()
     losses: list[float] = []
     logits_all: list[torch.Tensor] = []
@@ -107,6 +130,8 @@ def evaluate(model: FallPoseTCNModel, loader: DataLoader, device: torch.device, 
 
 def main() -> int:
     args = parse_args()
+    np = import_numpy()
+    torch, nn, DataLoader, TensorDataset, FallPoseTCNModel = import_training_dependencies()
     x, y, metadata = load_dataset(args.dataset.expanduser())
     classes = sorted(set(int(v) for v in y.tolist()))
     if len(classes) < 2 and not args.allow_single_class:

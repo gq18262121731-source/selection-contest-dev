@@ -2,18 +2,36 @@
 """
 手环数据采集快速诊断工具（独立版本）
 """
+import argparse
 import os
 from pathlib import Path
 
 
-def read_env_file():
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Quickly check wristband serial collection configuration and backend availability."
+    )
+    parser.add_argument(
+        "--env-file",
+        type=Path,
+        default=Path(__file__).parent.parent / ".env",
+        help="Path to the project .env file.",
+    )
+    parser.add_argument(
+        "--backend-url",
+        default="http://localhost:8000/healthz",
+        help="Backend health check URL.",
+    )
+    return parser.parse_args()
+
+
+def read_env_file(env_path: Path):
     """读取.env文件"""
-    env_path = Path(__file__).parent.parent / '.env'
     config = {}
-    
+
     if not env_path.exists():
         return None
-    
+
     with open(env_path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
@@ -34,19 +52,21 @@ def check_serial_ports():
         return None
 
 
-def main():
+def main() -> int:
+    args = parse_args()
+
     print("="*70)
     print("手环数据采集快速诊断")
     print("="*70)
-    
+
     # 1. 读取配置
     print("\n[1/3] 检查配置文件...")
-    config = read_env_file()
-    
+    config = read_env_file(args.env_file)
+
     if config is None:
-        print("  ✗ 未找到.env文件")
-        return
-    
+        print(f"  [FAIL] 未找到.env文件: {args.env_file}")
+        return 1
+
     # 关键配置项
     data_mode = config.get('DATA_MODE', 'mock')
     serial_enabled = config.get('SERIAL_ENABLED', 'false').lower()
@@ -68,14 +88,14 @@ def main():
     
     if not serial_port:
         issues.append("SERIAL_PORT 未配置")
-    
+
     if issues:
-        print("  ✗ 发现配置问题：")
+        print("  [FAIL] 发现配置问题：")
         for issue in issues:
             print(f"    - {issue}")
     else:
-        print("  ✓ 配置正确")
-    
+        print("  [OK] 配置正确")
+
     print(f"\n  当前配置：")
     print(f"    DATA_MODE: {data_mode}")
     print(f"    SERIAL_ENABLED: {serial_enabled}")
@@ -86,22 +106,22 @@ def main():
     # 2. 检查串口
     print("\n[2/3] 检查串口设备...")
     ports = check_serial_ports()
-    
+
     if ports is None:
-        print("  ⚠ pyserial 未安装")
+        print("  [WARN] pyserial 未安装")
         print("    安装命令: pip install pyserial")
     elif not ports:
-        print("  ✗ 未找到任何串口设备")
+        print("  [FAIL] 未找到任何串口设备")
         print("    请检查：")
         print("    1. USB接收器是否插入")
         print("    2. 驱动是否安装（CH340或CP210x）")
         print("    3. 在设备管理器中查看")
     else:
-        print(f"  ✓ 找到 {len(ports)} 个串口：")
+        print(f"  [OK] 找到 {len(ports)} 个串口：")
         for port in ports:
             marker = "  ← 配置的端口" if str(port.device).upper() == serial_port.upper() else ""
             print(f"    - {port.device}: {port.description}{marker}")
-        
+
         # 检查配置的端口是否存在
         if serial_port:
             port_exists = any(
@@ -109,29 +129,29 @@ def main():
                 for port in ports
             )
             if not port_exists:
-                print(f"\n  ⚠ 警告：配置的端口 {serial_port} 不存在")
+                print(f"\n  [WARN] 配置的端口 {serial_port} 不存在")
                 print(f"    可用端口: {', '.join(str(p.device) for p in ports)}")
-    
+
     # 3. 检查后端
     print("\n[3/3] 检查后端服务...")
     try:
         import urllib.request
-        with urllib.request.urlopen("http://localhost:8000/healthz", timeout=2) as response:
+        with urllib.request.urlopen(args.backend_url, timeout=2) as response:
             if response.status == 200:
-                print("  ✓ 后端服务正常运行")
+                print("  [OK] 后端服务正常运行")
             else:
-                print(f"  ✗ 后端响应异常: {response.status}")
+                print(f"  [FAIL] 后端响应异常: {response.status}")
     except Exception as e:
-        print("  ✗ 无法连接到后端服务")
+        print("  [FAIL] 无法连接到后端服务")
         print("    请启动后端: python run.py")
-    
+
     # 总结
     print("\n" + "="*70)
     print("诊断总结")
     print("="*70)
-    
+
     if issues:
-        print("\n❌ 发现配置问题，需要修复：")
+        print("\n[FAIL] 发现配置问题，需要修复：")
         print("\n请修改 .env 文件：")
         print("-" * 70)
         if any("DATA_MODE" in issue for issue in issues):
@@ -147,18 +167,18 @@ def main():
         print("\n修改后重启后端服务：")
         print("  python run.py")
     else:
-        print("\n✓ 配置正确")
-        
+        print("\n[OK] 配置正确")
+
         if ports is None:
-            print("\n⚠ 需要安装 pyserial：")
+            print("\n[WARN] 需要安装 pyserial：")
             print("  pip install pyserial")
         elif not ports:
-            print("\n⚠ 未找到串口设备，请检查：")
+            print("\n[WARN] 未找到串口设备，请检查：")
             print("  1. USB接收器是否插入")
             print("  2. 驱动是否安装")
             print("  3. 在设备管理器中查看端口(COM和LPT)")
         else:
-            print("\n✓ 串口设备正常")
+            print("\n[OK] 串口设备正常")
             print("\n如果仍然收不到数据，请：")
             print("  1. 确认手环已开机并佩戴")
             print("  2. 确认手环与接收器距离<5米")
@@ -169,7 +189,8 @@ def main():
     print("  - 快速修复: docs/WRISTBAND_QUICK_FIX.md")
     print("  - 完整排查: docs/WRISTBAND_DATA_TROUBLESHOOTING.md")
     print()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
