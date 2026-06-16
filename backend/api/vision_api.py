@@ -12,11 +12,14 @@ router = APIRouter(prefix="/vision", tags=["vision"])
 def _wrap_response(
     result: dict,
     *,
+    client: VisionServiceClient,
     camera_id: str | None = None,
 ) -> dict:
     payload = {
         "status": result.get("status"),
         "reason": result.get("reason"),
+        "base_url": client.base_url,
+        "default_camera_id": client.default_camera_id,
         "vision_service": result,
     }
     if camera_id is not None:
@@ -28,7 +31,7 @@ def _wrap_response(
 async def vision_health(
     client: VisionServiceClient = Depends(get_vision_service_client),
 ) -> dict:
-    return _wrap_response(client.get_health())
+    return _wrap_response(client.get_health(), client=client)
 
 
 @router.get("/status")
@@ -37,7 +40,7 @@ async def vision_status(
     client: VisionServiceClient = Depends(get_vision_service_client),
 ) -> dict:
     resolved_camera_id = (camera_id or client.default_camera_id).strip() or client.default_camera_id
-    return _wrap_response(client.get_status(resolved_camera_id), camera_id=resolved_camera_id)
+    return _wrap_response(client.get_status(resolved_camera_id), client=client, camera_id=resolved_camera_id)
 
 
 @router.get("/source")
@@ -46,7 +49,7 @@ async def vision_source(
     client: VisionServiceClient = Depends(get_vision_service_client),
 ) -> dict:
     resolved_camera_id = (camera_id or client.default_camera_id).strip() or client.default_camera_id
-    return _wrap_response(client.get_stream_source(resolved_camera_id), camera_id=resolved_camera_id)
+    return _wrap_response(client.get_stream_source(resolved_camera_id), client=client, camera_id=resolved_camera_id)
 
 
 @router.get("/results/latest")
@@ -55,4 +58,4 @@ async def vision_results_latest(
     client: VisionServiceClient = Depends(get_vision_service_client),
 ) -> dict:
     resolved_camera_id = (camera_id or client.default_camera_id).strip() or client.default_camera_id
-    return _wrap_response(client.get_latest_result(resolved_camera_id), camera_id=resolved_camera_id)
+    return _wrap_response(client.get_latest_result(resolved_camera_id), client=client, camera_id=resolved_camera_id)

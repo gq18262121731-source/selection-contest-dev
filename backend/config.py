@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import json
 from pathlib import Path
 import sys
 from typing import Annotated, Literal
@@ -394,6 +395,44 @@ class Settings(BaseSettings):
         self.serial_enabled = False
         self.use_mock_data = True
         self.enable_mock_overlay = False
+        return self
+
+    @model_validator(mode="after")
+    def apply_shared_vision_runtime_override(self) -> "Settings":
+        # `video_bridge_runtime_config.json` persists the shared Vision runtime override.
+        # `/api/v1/vision/*` and `/api/v1/video-bridge/runtime-config` must resolve the
+        # same effective upstream instead of acting like separate authorities.
+        runtime_config_path = self.data_dir / "video_bridge_runtime_config.json"
+        if not runtime_config_path.exists():
+            return self
+        try:
+            payload = json.loads(runtime_config_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return self
+        if not isinstance(payload, dict):
+            return self
+
+        base_url = str(payload.get("base_url") or "").strip().rstrip("/")
+        if base_url:
+            self.vision_service_base_url = base_url
+        camera_id = str(payload.get("camera_id") or "").strip()
+        if camera_id:
+            self.vision_service_camera_id = camera_id
+        if "poll_enabled" in payload:
+            self.vision_service_poll_enabled = bool(payload.get("poll_enabled"))
+        if "poll_hz" in payload:
+            try:
+                self.vision_service_poll_hz = max(0.2, min(5.0, float(payload.get("poll_hz") or 2.0)))
+            except (TypeError, ValueError):
+                pass
+        if "timeout_seconds" in payload:
+            try:
+                self.vision_service_timeout_seconds = max(0.5, min(30.0, float(payload.get("timeout_seconds") or 2.5)))
+            except (TypeError, ValueError):
+                pass
+        push_token = str(payload.get("push_token") or "").strip()
+        if push_token:
+            self.vision_service_push_token = push_token
         return self
 
     @property

@@ -42,6 +42,11 @@ from backend.services.community_insight_service import CommunityInsightService
 from backend.services.care_service import CareService
 from backend.services.device_service import DeviceService
 from backend.services.explanation_service import ExplanationService
+from backend.services.fall_alarm_contract import (
+    normalize_fall_alarm_metadata,
+    normalize_fall_alarm_record,
+    select_fall_alarm_type,
+)
 from backend.services.health_data_repository import HealthDataRepository
 from backend.services.health_score_service import HealthScoreService as StructuredHealthScoreService
 from backend.services.health_stability_service import HealthStabilityService
@@ -520,11 +525,21 @@ def get_video_bridge_service() -> VideoBridgeService:
 
 def get_vision_service_client() -> VisionServiceClient:
     global _vision_service_client
-    if _vision_service_client is None:
+    desired_base_url = str(_settings.vision_service_base_url or "").strip().rstrip("/")
+    desired_camera_id = (_settings.vision_service_camera_id or "camera_01").strip() or "camera_01"
+    desired_timeout = max(0.1, float(_settings.vision_service_timeout_seconds))
+    if (
+        _vision_service_client is None
+        or _vision_service_client.base_url != desired_base_url
+        or _vision_service_client.default_camera_id != desired_camera_id
+        or abs(_vision_service_client.timeout - desired_timeout) > 1e-9
+    ):
+        if _vision_service_client is not None:
+            _vision_service_client.close()
         _vision_service_client = VisionServiceClient(
-            base_url=_settings.vision_service_base_url,
-            default_camera_id=_settings.vision_service_camera_id,
-            timeout=_settings.vision_service_timeout_seconds,
+            base_url=desired_base_url,
+            default_camera_id=desired_camera_id,
+            timeout=desired_timeout,
         )
     return _vision_service_client
 
@@ -1462,34 +1477,41 @@ async def _ingest_video_bridge_alarm_event(event: dict[str, object]) -> AlarmRec
         message_parts.append(f"score={fall_score:.2f}")
     message = " | ".join(message_parts)
 
+    normalized_event = normalize_fall_alarm_metadata(metadata, event)["event"]
     enriched_metadata = {
         **metadata,
         "source": event.get("source") or "vision_service",
         "trigger": metadata.get("trigger") or "video_bridge_fall_events",
         "target_device_mac": device_identity,
         "target_device_pseudo_mac": pseudo_mac,
-        "camera_id": camera_id,
-        "stream_name": event.get("stream_name"),
-        "incident_id": event.get("incident_id"),
-        "track_id": event.get("track_id"),
-        "snapshot_url": event.get("snapshot_url") or event.get("snapshot_path"),
-        "risk": risk,
-        "state": state,
-        "event_type": event.get("event_type") or "fall_confirmed",
-        "fall_score": fall_score,
+        "camera_id": normalized_event.get("camera_id") or camera_id,
+        "stream_name": normalized_event.get("stream_name"),
+        "incident_id": normalized_event.get("incident_id"),
+        "track_id": normalized_event.get("track_id"),
+        "snapshot_url": normalized_event.get("snapshot_url"),
+        "snapshot_path": normalized_event.get("snapshot_path"),
+        "risk": normalized_event.get("risk") or risk,
+        "risk_level": normalized_event.get("risk_level") or risk,
+        "state": normalized_event.get("state") or state,
+        "event_type": normalized_event.get("event_type") or event.get("event_type") or "fall_confirmed",
+        "fall_score": normalized_event.get("fall_score") if normalized_event.get("fall_score") is not None else fall_score,
+        "fall_prob": normalized_event.get("fall_prob"),
+        "event": normalized_event,
         "raw_event": event,
         "is_real_device": True,
     }
+    enriched_metadata = normalize_fall_alarm_metadata(enriched_metadata, event)
 
     alarm = AlarmRecord(
         device_mac=pseudo_mac,
-        alarm_type=AlarmType.VIDEO_FALL,
+        alarm_type=select_fall_alarm_type(event, enriched_metadata),
         alarm_level=level,
         alarm_layer=AlarmLayer.INTELLIGENT,
         message=message,
         anomaly_probability=fall_score,
         metadata=enriched_metadata,
     )
+    alarm = normalize_fall_alarm_record(alarm)
 
     emitted = _alarm_service.evaluate_alarm_records([alarm])
     if not emitted:

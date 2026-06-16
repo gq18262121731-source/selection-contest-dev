@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from backend.models.alarm_model import AlarmQueueItem, AlarmRecord, MobilePushRecord
 from backend.models.health_model import HealthSample
+from backend.services.fall_alarm_contract import normalize_fall_alarm_record
 
 
 logger = logging.getLogger(__name__)
@@ -61,10 +62,13 @@ class AlarmService:
             alarms = [alarm for alarm in alarms if self._normalize_mac(alarm.device_mac) == normalized_mac]
         if active_only:
             alarms = [alarm for alarm in alarms if not alarm.acknowledged]
-        return alarms
+        return [normalize_fall_alarm_record(alarm) for alarm in alarms]
 
     def queue_items(self, active_only: bool = True) -> list[AlarmQueueItem]:
-        return self._queue.items(active_only=active_only)
+        return [
+            item.model_copy(update={"alarm": normalize_fall_alarm_record(item.alarm)})
+            for item in self._queue.items(active_only=active_only)
+        ]
 
     def queue_snapshot(self) -> dict[str, object]:
         return self._queue.snapshot()

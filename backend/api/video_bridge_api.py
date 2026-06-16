@@ -58,6 +58,7 @@ async def get_video_bridge_status() -> VideoBridgeStatusResponse:
 
 @router.get("/runtime-config", response_model=VideoBridgeRuntimeConfigResponse)
 async def get_video_bridge_runtime_config() -> VideoBridgeRuntimeConfigResponse:
+    """Return the shared Vision runtime override used by both video-bridge and /api/v1/vision/*."""
     return get_video_bridge_service().runtime_config()
 
 
@@ -65,6 +66,7 @@ async def get_video_bridge_runtime_config() -> VideoBridgeRuntimeConfigResponse:
 async def update_video_bridge_runtime_config(
     payload: VideoBridgeRuntimeConfigUpdateRequest,
 ) -> VideoBridgeRuntimeConfigResponse:
+    """Update the shared Vision runtime override. This is not a separate upstream authority."""
     return get_video_bridge_service().update_runtime_config(payload)
 
 

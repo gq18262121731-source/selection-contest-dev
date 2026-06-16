@@ -15,6 +15,8 @@ class AlarmType(str, Enum):
     INTELLIGENT_ANOMALY = "intelligent_anomaly"
     COMMUNITY_RISK = "community_risk"
     DEVICE_STATUS = "device_status"
+    FALL_DETECTED = "fall_detected"
+    FALL_INJURY_RISK = "fall_injury_risk"
     VIDEO_FALL = "video_fall"
 
 

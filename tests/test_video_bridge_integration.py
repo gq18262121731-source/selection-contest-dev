@@ -50,11 +50,17 @@ def test_video_bridge_push_creates_alarm() -> None:
     assert result["promoted"] is True
     alarm = result["alarm"]
     assert alarm is not None
-    assert alarm.alarm_type == AlarmType.VIDEO_FALL
+    assert alarm.alarm_type == AlarmType.FALL_INJURY_RISK
     assert alarm.device_mac == "AA:BB:CC:DD:EE:11"
     assert alarm.metadata["elder_id"] == "elder_demo_01"
     assert alarm.metadata["family_ids"] == ["family01"]
     assert alarm.metadata["incident_id"] == "unit-test-incident-001"
     assert alarm.metadata["camera_id"] == "camera_01"
     assert alarm.metadata["trigger"] == "video_bridge_fall_events"
+    assert isinstance(alarm.metadata.get("event"), dict)
+    assert alarm.metadata["event"]["incident_id"] == "unit-test-incident-001"
+    assert alarm.metadata["event"]["state"] == "confirmed_fall"
+    assert alarm.metadata["event"]["camera_id"] == "camera_01"
+    assert alarm.metadata["event"]["fall_score"] == 0.93
+    assert alarm.metadata["event"]["fall_prob"] == 0.93
     assert settings.fall_detection_target_elder_id == "elder_demo_01"
