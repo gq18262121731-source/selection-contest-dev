@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/network/server_endpoint_config.dart';
 import '../../alarm/providers/alarm_provider.dart';
 import '../../care/providers/care_provider.dart';
+import '../widgets/vision_connection_debug_dialog.dart';
 import '../../../widgets/logout_action.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -113,7 +114,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('服务器设置', style: TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold)),
+        title: const Text('服务器设置',
+            style: TextStyle(
+                color: AppColors.textMain, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textMain),
@@ -152,7 +155,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _hostController,
-                style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: AppColors.textMain, fontWeight: FontWeight.bold),
                 decoration: _inputDecoration(hintText: '例如 192.168.1.23'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -166,7 +170,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 controller: _portController,
-                style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: AppColors.textMain, fontWeight: FontWeight.bold),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: _inputDecoration(hintText: '8000'),
@@ -183,7 +188,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _isTesting || _isSaving ? null : _testConnection,
+                      onPressed:
+                          _isTesting || _isSaving ? null : _testConnection,
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -217,6 +223,30 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isSaving || _isTesting
+                      ? null
+                      : () {
+                          showDialog<void>(
+                            context: context,
+                            builder: (_) => const VisionConnectionDebugDialog(),
+                          );
+                        },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  icon: const Icon(Icons.monitor_heart_outlined,
+                      color: AppColors.textMain),
+                  label: const Text(
+                    '视觉服务联调确认',
+                    style: TextStyle(color: AppColors.textMain),
+                  ),
+                ),
+              ),
               if (_testResult != null) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -224,8 +254,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _testResult!.contains('成功')
-                        ? Colors.green.withOpacity(0.12)
-                        : Colors.orange.withOpacity(0.12),
+                        ? Colors.green.withValues(alpha: 0.12)
+                        : Colors.orange.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _testResult!.contains('成功')
@@ -254,19 +284,27 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             '当前后端地址',
-            style: TextStyle(color: AppColors.textMain, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: AppColors.textMain,
+                fontSize: 16,
+                fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             config.origin,
-            style: const TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 15,
+                fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -281,7 +319,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   Widget _buildFieldLabel(String label) {
     return Text(
       label,
-      style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.w600),
+      style: const TextStyle(
+          color: AppColors.textMain, fontWeight: FontWeight.w600),
     );
   }
 
