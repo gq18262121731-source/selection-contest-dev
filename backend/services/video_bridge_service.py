@@ -536,7 +536,10 @@ class VideoBridgeService:
             or ""
         ).strip().lower()
         status = str(latest.get("status") or state or "").strip().lower()
-        fall_detected = bool(latest.get("fall_detected"))
+        fall_detected = bool(self._coerce_bool(self._first_present(latest, payload, keys=("fall_detected",))))
+        alarm_confirmed = bool(
+            self._coerce_bool(self._first_present(latest, payload, keys=("alarm_confirmed", "confirmed_fall")))
+        )
         fall_score = self._coerce_float(
             latest.get("fall_score")
             or latest.get("fall_prob")
@@ -547,11 +550,14 @@ class VideoBridgeService:
         ) or 0.0
         threshold = max(0.0, min(1.0, float(self._settings.fall_detection_min_alert_score or 0.0)))
         confirmed_states = {"confirmed_fall", "fallen", "abnormal_recovery", "needs_assistance", "emergency"}
+        score_triggered = threshold > 0.0 and fall_score >= threshold
         should_promote = (
+            alarm_confirmed
+            or
             state in confirmed_states
             or status in confirmed_states
             or fall_detected
-            or fall_score >= threshold
+            or score_triggered
         )
         if not should_promote:
             return None, "not_candidate"
@@ -595,7 +601,7 @@ class VideoBridgeService:
             "severity": severity,
             "risk": latest.get("risk") or payload.get("risk") or ("high" if severity == "L3" else "medium"),
             "risk_level": latest.get("risk_level") or latest.get("risk") or payload.get("risk") or ("high" if severity == "L3" else "medium"),
-            "fall_detected": True if fall_detected or state in confirmed_states else fall_score >= threshold,
+            "fall_detected": True if alarm_confirmed or fall_detected or state in confirmed_states else score_triggered,
             "fall_score": fall_score,
             "fall_prob": fall_score,
             "camera_id": camera_id,
@@ -854,6 +860,22 @@ class VideoBridgeService:
             return int(float(value))
         except (TypeError, ValueError):
             return None
+
+    @staticmethod
+    def _coerce_bool(value: Any) -> bool | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"true", "1", "yes", "y", "on"}:
+                return True
+            if normalized in {"false", "0", "no", "n", "off"}:
+                return False
+        return None
 
     @staticmethod
     def _coerce_timestamp(value: Any) -> datetime:

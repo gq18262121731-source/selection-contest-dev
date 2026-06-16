@@ -16,7 +16,16 @@ class AlarmPriorityQueue:
     def __init__(self, redis_url: str, queue_key: str = "alarm:priority") -> None:
         self._queue_key = queue_key
         self._memory: dict[str, tuple[float, AlarmRecord]] = {}
-        self._redis = Redis.from_url(redis_url, decode_responses=True) if Redis else None
+        self._redis = (
+            Redis.from_url(
+                redis_url,
+                decode_responses=True,
+                socket_connect_timeout=0.2,
+                socket_timeout=0.2,
+            )
+            if Redis
+            else None
+        )
 
     def enqueue(self, alarm: AlarmRecord) -> None:
         score = self._score_for(alarm)
@@ -25,7 +34,9 @@ class AlarmPriorityQueue:
             try:
                 self._redis.zadd(self._queue_key, {alarm.model_dump_json(): score})
             except Exception:
-                pass
+                # Fall back to the in-memory queue after the first Redis failure
+                # so alarm ingestion never stalls on repeated reconnect attempts.
+                self._redis = None
 
     def remove(self, alarm_id: str) -> None:
         cached = self._memory.pop(alarm_id, None)
@@ -34,7 +45,7 @@ class AlarmPriorityQueue:
             try:
                 self._redis.zrem(self._queue_key, alarm.model_dump_json())
             except Exception:
-                pass
+                self._redis = None
 
     def items(self, active_only: bool = True) -> list[AlarmQueueItem]:
         alarms = [item for item in self._memory.values() if not active_only or not item[1].acknowledged]

@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/server_endpoint_config.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../widgets/logout_action.dart';
 import '../../alarm/providers/alarm_provider.dart';
 import '../../care/providers/care_provider.dart';
 import '../widgets/vision_connection_debug_dialog.dart';
-import '../../../widgets/logout_action.dart';
-import '../../../core/theme/app_colors.dart';
 
 class ServerSettingsScreen extends StatefulWidget {
   const ServerSettingsScreen({super.key});
@@ -114,9 +114,13 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('服务器设置',
-            style: TextStyle(
-                color: AppColors.textMain, fontWeight: FontWeight.bold)),
+        title: const Text(
+          '服务器设置',
+          style: TextStyle(
+            color: AppColors.textMain,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textMain),
@@ -156,7 +160,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               TextFormField(
                 controller: _hostController,
                 style: const TextStyle(
-                    color: AppColors.textMain, fontWeight: FontWeight.bold),
+                  color: AppColors.textMain,
+                  fontWeight: FontWeight.bold,
+                ),
                 decoration: _inputDecoration(hintText: '例如 192.168.1.23'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -171,7 +177,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               TextFormField(
                 controller: _portController,
                 style: const TextStyle(
-                    color: AppColors.textMain, fontWeight: FontWeight.bold),
+                  color: AppColors.textMain,
+                  fontWeight: FontWeight.bold,
+                ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: _inputDecoration(hintText: '8000'),
@@ -239,10 +247,12 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     side: const BorderSide(color: AppColors.border),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  icon: const Icon(Icons.monitor_heart_outlined,
-                      color: AppColors.textMain),
+                  icon: const Icon(
+                    Icons.monitor_heart_outlined,
+                    color: AppColors.textMain,
+                  ),
                   label: const Text(
-                    '视觉服务联调确认',
+                    '联调地址确认',
                     style: TextStyle(color: AppColors.textMain),
                   ),
                 ),
@@ -285,7 +295,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -294,21 +304,23 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           const Text(
             '当前后端地址',
             style: TextStyle(
-                color: AppColors.textMain,
-                fontSize: 16,
-                fontWeight: FontWeight.bold),
+              color: AppColors.textMain,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             config.origin,
             style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 15,
-                fontWeight: FontWeight.bold),
+              color: AppColors.primary,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           const Text(
-            'Android 真机接入同一局域网时，请把这里改成运行 python run.py 后在终端屏幕上提示的服务端局域网 IP。',
+            'Android 真机接入同一局域网时，请把这里改成运行 python run.py 后在终端中显示的服务端局域网 IP。',
             style: TextStyle(color: AppColors.textSub, height: 1.5),
           ),
         ],
@@ -320,7 +332,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     return Text(
       label,
       style: const TextStyle(
-          color: AppColors.textMain, fontWeight: FontWeight.w600),
+        color: AppColors.textMain,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 

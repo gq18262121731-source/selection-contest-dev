@@ -782,8 +782,30 @@ export interface FamilyRelationRecord {
   created_at: string;
 }
 
+export interface VisionHealthResponse {
+  status?: string;
+  reason?: string;
+  base_url?: string;
+  camera_id?: string;
+  default_camera_id?: string;
+  vision_service?: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000/api/v1";
 const WS_BASE = (import.meta.env.VITE_WS_BASE ?? "ws://localhost:8000").replace(/\/$/, "");
+
+export function getMainSystemBaseUrl(): string {
+  try {
+    return new URL(API_BASE, window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+}
+
+export function getVisionHealthEndpoint(): string {
+  return `${API_BASE}/vision/health`;
+}
 
 export class ApiError extends Error {
   status: number;

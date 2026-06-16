@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/server_endpoint_config.dart';
@@ -22,13 +23,97 @@ class _VisionConnectionDebugDialogState
   Map<String, dynamic>? _jsonPayload;
   String? _rawResponse;
 
+  String get _mainSystemAddress => context.read<ServerEndpointConfig>().origin;
+
+  String get _visionServiceAddress {
+    final payload = _jsonPayload;
+    if (payload == null) {
+      return 'unknown';
+    }
+
+    final topLevelBaseUrl = payload['base_url'];
+    if (topLevelBaseUrl is String && topLevelBaseUrl.trim().isNotEmpty) {
+      return topLevelBaseUrl;
+    }
+
+    final visionService = payload['vision_service'];
+    if (visionService is Map<String, dynamic>) {
+      final nestedBaseUrl = visionService['base_url'];
+      if (nestedBaseUrl is String && nestedBaseUrl.trim().isNotEmpty) {
+        return nestedBaseUrl;
+      }
+
+      final nestedUrl = visionService['url'];
+      if (nestedUrl is String && nestedUrl.trim().isNotEmpty) {
+        final uri = Uri.tryParse(nestedUrl);
+        if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+          final portPart = uri.hasPort ? ':${uri.port}' : '';
+          return '${uri.scheme}://${uri.host}$portPart';
+        }
+        return nestedUrl;
+      }
+    }
+
+    return 'unknown';
+  }
+
+  String get _cameraId {
+    final payload = _jsonPayload;
+    if (payload == null) {
+      return 'unknown';
+    }
+
+    final topLevelCameraId = payload['camera_id'];
+    if (topLevelCameraId is String && topLevelCameraId.trim().isNotEmpty) {
+      return topLevelCameraId;
+    }
+
+    final defaultCameraId = payload['default_camera_id'];
+    if (defaultCameraId is String && defaultCameraId.trim().isNotEmpty) {
+      return defaultCameraId;
+    }
+
+    return 'camera_01';
+  }
+
+  String get _connectionStatus {
+    if (_errorMessage != null) {
+      return _errorMessage!;
+    }
+
+    final payload = _jsonPayload;
+    if (payload == null) {
+      return 'unknown';
+    }
+
+    final status = payload['status'];
+    if (status is String && status.trim().isNotEmpty) {
+      return status;
+    }
+
+    final visionService = payload['vision_service'];
+    if (visionService is Map<String, dynamic>) {
+      final nestedStatus = visionService['status'];
+      if (nestedStatus is String && nestedStatus.trim().isNotEmpty) {
+        return nestedStatus;
+      }
+
+      final reason = visionService['reason'];
+      if (reason is String && reason.trim().isNotEmpty) {
+        return reason;
+      }
+    }
+
+    return 'unknown';
+  }
+
   Future<void> _testVisionHealth() async {
     final endpointConfig = context.read<ServerEndpointConfig>();
     final dio = Dio(
       BaseOptions(
         baseUrl: endpointConfig.origin,
-        connectTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 5),
+        connectTimeout: const Duration(seconds: 3),
+        receiveTimeout: const Duration(seconds: 3),
         responseType: ResponseType.plain,
       ),
     );
@@ -42,18 +127,20 @@ class _VisionConnectionDebugDialogState
 
     try {
       final response = await dio.get<String>('/api/v1/vision/health');
-      final rawText = response.data ?? '';
+      final rawText = _normalizeRawResponse(response.data);
       Map<String, dynamic>? decoded;
+      String? parseError;
+
       if (rawText.trim().isNotEmpty) {
         try {
           final parsed = jsonDecode(rawText);
           if (parsed is Map<String, dynamic>) {
             decoded = parsed;
           } else {
-            _errorMessage = '响应格式异常';
+            parseError = '响应格式异常';
           }
         } catch (_) {
-          _errorMessage = '响应格式异常';
+          parseError = '响应格式异常';
         }
       }
 
@@ -63,6 +150,7 @@ class _VisionConnectionDebugDialogState
 
       setState(() {
         _isLoading = false;
+        _errorMessage = parseError;
         _jsonPayload = decoded;
         _rawResponse = rawText;
       });
@@ -70,9 +158,10 @@ class _VisionConnectionDebugDialogState
       if (!mounted) {
         return;
       }
+
       setState(() {
         _isLoading = false;
-        _rawResponse = error.response?.data?.toString();
+        _rawResponse = _normalizeRawResponse(error.response?.data);
         switch (error.type) {
           case DioExceptionType.connectionTimeout:
           case DioExceptionType.receiveTimeout:
@@ -91,6 +180,7 @@ class _VisionConnectionDebugDialogState
       if (!mounted) {
         return;
       }
+
       setState(() {
         _isLoading = false;
         _errorMessage = '响应格式异常';
@@ -98,62 +188,47 @@ class _VisionConnectionDebugDialogState
     }
   }
 
-  String get _mainSystemAddress => context.read<ServerEndpointConfig>().origin;
+  Future<void> _copySummary() async {
+    final summary = [
+      'Main System:',
+      _mainSystemAddress,
+      '',
+      'Vision Service:',
+      _visionServiceAddress,
+      '',
+      'Camera ID:',
+      _cameraId,
+      '',
+      'Status:',
+      _connectionStatus,
+      '',
+      'Time:',
+      DateTime.now().toIso8601String(),
+    ].join('\n');
 
-  String get _visionServiceAddress {
-    final payload = _jsonPayload;
-    if (payload == null) return '未返回 / unknown';
-    final topLevelBaseUrl = payload['base_url'];
-    if (topLevelBaseUrl is String && topLevelBaseUrl.trim().isNotEmpty) {
-      return topLevelBaseUrl;
+    await Clipboard.setData(ClipboardData(text: summary));
+    if (!mounted) {
+      return;
     }
-    final visionService = payload['vision_service'];
-    if (visionService is Map<String, dynamic>) {
-      final nestedUrl = visionService['url'];
-      if (nestedUrl is String && nestedUrl.trim().isNotEmpty) {
-        final uri = Uri.tryParse(nestedUrl);
-        if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
-          final portPart = uri.hasPort ? ':${uri.port}' : '';
-          return '${uri.scheme}://${uri.host}$portPart';
-        }
-        return nestedUrl;
-      }
-    }
-    return '未返回 / unknown';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('联调摘要已复制')),
+    );
   }
 
-  String get _cameraId {
-    final payload = _jsonPayload;
-    if (payload == null) return 'camera_01';
-    final topLevelCameraId = payload['camera_id'];
-    if (topLevelCameraId is String && topLevelCameraId.trim().isNotEmpty) {
-      return topLevelCameraId;
+  String _normalizeRawResponse(Object? data) {
+    if (data == null) {
+      return '';
     }
-    final defaultCameraId = payload['default_camera_id'];
-    if (defaultCameraId is String && defaultCameraId.trim().isNotEmpty) {
-      return defaultCameraId;
+    if (data is String) {
+      return data;
     }
-    return 'camera_01';
-  }
 
-  String get _connectionStatus {
-    if (_errorMessage == '主系统不可达') return '主系统不可达';
-    if (_errorMessage == '请求超时') return '请求超时';
-    if (_errorMessage == '响应格式异常') return '响应格式异常';
-    final payload = _jsonPayload;
-    if (payload == null) return 'unknown';
-    final status = payload['status'];
-    if (status is String && status.trim().isNotEmpty) {
-      return status;
+    try {
+      return const JsonEncoder.withIndent('  ').convert(data);
+    } catch (_) {
+      return data.toString();
     }
-    final visionService = payload['vision_service'];
-    if (visionService is Map<String, dynamic>) {
-      final reason = visionService['reason'];
-      if (reason is String && reason.trim().isNotEmpty) {
-        return reason;
-      }
-    }
-    return 'unknown';
   }
 
   Widget _buildField(String label, String value, {Color? valueColor}) {
@@ -200,6 +275,7 @@ class _VisionConnectionDebugDialogState
       case 'connection_error':
       case '请求超时':
       case '主系统不可达':
+      case '响应格式异常':
         return AppColors.error;
       case 'degraded':
         return AppColors.warning;
@@ -215,7 +291,7 @@ class _VisionConnectionDebugDialogState
     return AlertDialog(
       backgroundColor: const Color(0xFFF8FAFC),
       title: const Text(
-        '视觉服务联调确认',
+        '联调地址确认',
         style:
             TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
       ),
@@ -226,21 +302,29 @@ class _VisionConnectionDebugDialogState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildField('主系统地址', _mainSystemAddress,
-                  valueColor: AppColors.primary),
+              _buildField(
+                '主系统地址',
+                _mainSystemAddress,
+                valueColor: AppColors.primary,
+              ),
               const SizedBox(height: 12),
               _buildField('Vision Service 地址', _visionServiceAddress),
               const SizedBox(height: 12),
-              _buildField('默认 camera_id', _cameraId),
+              _buildField('camera_id', _cameraId),
               const SizedBox(height: 12),
-              _buildField('连接状态', statusText,
-                  valueColor: _statusColor(statusText)),
+              _buildField(
+                '连接状态',
+                statusText,
+                valueColor: _statusColor(statusText),
+              ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
                 Text(
                   _errorMessage!,
                   style: const TextStyle(
-                      color: AppColors.error, fontWeight: FontWeight.w600),
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
               const SizedBox(height: 12),
@@ -253,7 +337,9 @@ class _VisionConnectionDebugDialogState
                   title: const Text(
                     '原始响应',
                     style: TextStyle(
-                        color: AppColors.textMain, fontWeight: FontWeight.w600),
+                      color: AppColors.textMain,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   children: [
                     Container(
@@ -284,24 +370,31 @@ class _VisionConnectionDebugDialogState
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('关闭'),
-        ),
-        ElevatedButton(
+        OutlinedButton(
           onPressed: _isLoading ? null : _testVisionHealth,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
-            foregroundColor: Colors.white,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textMain,
+            side: const BorderSide(color: AppColors.border),
           ),
           child: _isLoading
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('测试 Vision Service 连接'),
+              : const Text('测试连接'),
+        ),
+        TextButton(
+          onPressed: _isLoading ? null : _copySummary,
+          child: const Text('复制联调摘要'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2563EB),
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('关闭'),
         ),
       ],
     );

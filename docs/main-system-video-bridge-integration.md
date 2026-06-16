@@ -624,3 +624,11 @@ target_family_ids: family01
 ### 9.3 优先使用固定 IP，不要只写本机回环地址
 
 `127.0.0.1` 只适合本机自测。跨机器联调时，主系统和视觉服务都应该配置成对方实际可访问的局域网 IP。
+
+### 9.4 先做地址身份确认，再做告警联调
+
+从当前版本开始，凡是涉及主系统、Vision Service、`/api/v1/vision/*`、`/integration/results/*`、跌倒检测、告警联调、前端弹窗联调的任务，都必须先执行：
+
+- [主系统与视频系统地址确认规则](codex-debug-rules.md)
+
+尤其不要直接把 `192.168.8.253` 或 `192.168.8.254` 当成固定身份。必须先通过 `/healthz`、`/status`、`/integration/results/camera_01/latest` 的接口特征确认角色，再决定 `VISION_SERVICE_BASE_URL` 应该指向谁。

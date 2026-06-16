@@ -7,6 +7,7 @@ from backend.config import get_settings
 from backend.dependencies import get_video_bridge_service
 from backend.models.alarm_model import AlarmType
 from backend.models.video_bridge_model import VideoBridgeFallEventRequest
+from backend.services.video_bridge_service import VideoBridgeService
 
 
 def test_video_bridge_push_creates_alarm() -> None:
@@ -74,3 +75,68 @@ def test_video_bridge_push_creates_alarm() -> None:
             runtime_config_path.unlink(missing_ok=True)
         else:
             runtime_config_path.write_text(original_runtime_payload, encoding="utf-8")
+
+
+def test_poll_promotion_skips_normal_state_when_threshold_is_zero(tmp_path: Path) -> None:
+    settings = get_settings().model_copy(
+        update={
+            "data_dir": tmp_path,
+            "vision_service_base_url": "http://127.0.0.1:8090",
+            "fall_detection_min_alert_score": 0.0,
+        }
+    )
+    service = VideoBridgeService(settings=settings, runtime_config_path=tmp_path / "video_bridge_runtime_config.json")
+
+    event, reason = service._promotion_event_from_latest(
+        {
+            "camera_id": "camera_01",
+            "fall_state": "normal",
+            "fall_prob": 0.0,
+            "alarm_confirmed": False,
+            "timestamp": "2026-06-16T17:35:46.023+00:00",
+        },
+        payload={
+            "service_state": "running",
+            "timestamp": "2026-06-16T17:35:46.023+00:00",
+        },
+        camera_id="camera_01",
+        source={},
+    )
+
+    assert event is None
+    assert reason == "not_candidate"
+
+
+def test_poll_promotion_accepts_confirmed_fall_signal(tmp_path: Path) -> None:
+    settings = get_settings().model_copy(
+        update={
+            "data_dir": tmp_path,
+            "vision_service_base_url": "http://127.0.0.1:8090",
+            "fall_detection_min_alert_score": 0.0,
+        }
+    )
+    service = VideoBridgeService(settings=settings, runtime_config_path=tmp_path / "video_bridge_runtime_config.json")
+
+    event, reason = service._promotion_event_from_latest(
+        {
+            "camera_id": "camera_01",
+            "fall_state": "confirmed_fall",
+            "alarm_confirmed": True,
+            "fall_prob": 0.93,
+            "incident_id": "confirmed-incident-001",
+            "track_id": "track-001",
+            "timestamp": "2026-06-16T17:35:46.023+00:00",
+        },
+        payload={
+            "service_state": "running",
+            "timestamp": "2026-06-16T17:35:46.023+00:00",
+        },
+        camera_id="camera_01",
+        source={},
+    )
+
+    assert reason is None
+    assert event is not None
+    assert event["incident_id"] == "confirmed-incident-001"
+    assert event["fall_detected"] is True
+    assert event["state"] == "confirmed_fall"

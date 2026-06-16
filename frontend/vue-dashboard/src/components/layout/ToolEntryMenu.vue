@@ -71,7 +71,7 @@ onUnmounted(() => {
         </div>
         <div class="modern-tool-entry__content">
           <strong class="modern-tool-entry__title">调试看板</strong>
-          <small class="modern-tool-entry__description">查看设备原始样本、实时字段与趋势调试信息</small>
+          <small class="modern-tool-entry__description">查看设备原始样本、联调地址确认与实时字段调试信息</small>
         </div>
       </button>
     </div>

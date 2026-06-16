@@ -544,3 +544,44 @@ cd frontend\vue-dashboard
 npm run dev
 
 community_admin
+
+## 14. Vibe Coding / Codex 调试规则
+
+当前项目新增一条必须优先遵守的联调规则：
+
+- [主系统与视频系统地址确认规则](docs/codex-debug-rules.md)
+
+凡是涉及主系统、Vision Service、视频系统、跌倒检测、`/api/v1/vision/*`、`/integration/results/*`、告警联调、前端弹窗联调的任务，都必须先按该规则确认“谁是主系统、谁是 Vision Service”，再继续调试。
+
+## 15. 主系统代码真相源与联调版本记录
+
+主系统唯一代码真相源默认固定为：
+
+`D:\health_original\health1`
+
+除非明确说明“当前部署目录不是 GitHub 最新版本”，否则后续所有主系统问题分析、联调验证、功能开发都默认基于这个仓库进行，不再把 `D:\Program\410health` 作为代码真相源。
+
+每次联调前必须先记录以下版本信息：
+
+```text
+Main System Commit:
+xxxxxxxx
+
+Main System Branch:
+xxxxxxxx
+
+Main System Tags:
+xxxxxxxx
+```
+
+如果发现部署目录与 GitHub 不一致，必须先记录：
+
+```text
+Deploy Commit:
+xxxxxxxx
+
+GitHub Commit:
+xxxxxxxx
+```
+
+记录完成后，才能继续进行主系统、Vision Service、告警链路或前端弹窗排查。

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import TrendChart from "../components/TrendChart.vue";
+import VisionConnectionDebugCard from "../components/VisionConnectionDebugCard.vue";
 import PageHeader from "../components/layout/PageHeader.vue";
 import { useDebugDashboard } from "../composables/useDebugDashboard";
 import { useDeviceTrend } from "../composables/useDeviceTrend";
@@ -69,6 +70,8 @@ watch(
     </div>
 
     <section v-else class="panel-grid relation-grid">
+      <VisionConnectionDebugCard class="relation-span-2" />
+
       <article class="panel relation-intro">
         <p class="section-eyebrow">Realtime Debug</p>
         <h2>实时设备概览</h2>
