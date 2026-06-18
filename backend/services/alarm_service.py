@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from backend.models.alarm_model import AlarmQueueItem, AlarmRecord, MobilePushRecord
 from backend.models.health_model import HealthSample
-from backend.services.fall_alarm_contract import normalize_fall_alarm_record
+from backend.services.fall_alarm_contract import is_fall_alarm_type, normalize_fall_alarm_record
 
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ class AlarmService:
         *,
         sos_dedupe_window_seconds: int = 15,
         sos_release_window_seconds: int = 2,
+        fall_ack_cooldown_seconds: float = 20.0,
     ) -> None:
         self._detector = detector
         self._queue = queue
@@ -35,10 +36,14 @@ class AlarmService:
         # repeated alerts from the same physical event.
         self._sos_ack_cooldowns: dict[str, datetime] = {}
         self._last_non_sos_sample_at: dict[str, datetime] = {}
+        self._fall_ack_cooldowns: dict[str, datetime] = {}
         # Keep post-ack suppression short; long cooldowns can hide true new SOS events.
         # Use a small multiple of the dedupe window to absorb lingering packets only.
         self._sos_ack_cooldown_duration = timedelta(
             seconds=max(20, int(self._sos_dedupe_window.total_seconds() * 2)),
+        )
+        self._fall_ack_cooldown_duration = timedelta(
+            seconds=max(5.0, float(fall_ack_cooldown_seconds)),
         )
 
     def evaluate(self, sample: HealthSample) -> list[AlarmRecord]:
@@ -140,6 +145,19 @@ class AlarmService:
                         len(collapsed_sibling_ids),
                         self._sos_ack_cooldown_duration.total_seconds(),
                     )
+                elif is_fall_alarm_type(alarm.alarm_type):
+                    identity = self._fall_alarm_identity(alarm)
+                    self._fall_ack_cooldowns[identity] = datetime.now(timezone.utc)
+                    collapsed_sibling_ids = self._acknowledge_active_fall_siblings(
+                        identity=identity,
+                        exclude_alarm_id=alarm_id,
+                    )
+                    logger.info(
+                        "Fall alarm acknowledged for %s (collapsed %d sibling alarms) - cooldown active for %.1fs.",
+                        identity,
+                        len(collapsed_sibling_ids),
+                        self._fall_ack_cooldown_duration.total_seconds(),
+                    )
                 return updated, collapsed_sibling_ids
         return None, []
 
@@ -160,14 +178,33 @@ class AlarmService:
             acknowledged_ids.append(existing.id)
         return acknowledged_ids
 
+    def _acknowledge_active_fall_siblings(self, *, identity: str, exclude_alarm_id: str) -> list[str]:
+        acknowledged_ids: list[str] = []
+        for index, existing in enumerate(self._alarms):
+            if existing.id == exclude_alarm_id:
+                continue
+            if not is_fall_alarm_type(existing.alarm_type):
+                continue
+            if existing.acknowledged:
+                continue
+            if self._fall_alarm_identity(existing) != identity:
+                continue
+            self._alarms[index] = existing.model_copy(update={"acknowledged": True})
+            self._queue.remove(existing.id)
+            acknowledged_ids.append(existing.id)
+        return acknowledged_ids
+
     def _upsert_alarm(self, alarm: AlarmRecord) -> AlarmRecord | None:
         # Check post-acknowledgment cooldown first: if the user just dismissed
         # an SOS for this device, suppress subsequent SOS packets silently.
         if alarm.alarm_type.value == "sos" and self._is_in_sos_ack_cooldown(alarm.device_mac):
             return None
+        if is_fall_alarm_type(alarm.alarm_type) and self._is_in_fall_ack_cooldown(alarm):
+            return None
 
         existing_index = self._find_active_sos_index(alarm)
         if existing_index is not None:
+            self._refresh_active_sos_alarm(existing_index, alarm)
             self._collapse_active_sos_duplicates(
                 device_mac=alarm.device_mac,
                 keep_alarm_id=self._alarms[existing_index].id,
@@ -200,10 +237,36 @@ class AlarmService:
         )
         return True
 
+    def _is_in_fall_ack_cooldown(self, alarm: AlarmRecord) -> bool:
+        identity = self._fall_alarm_identity(alarm)
+        ack_at = self._fall_ack_cooldowns.get(identity)
+        if ack_at is None:
+            return False
+        elapsed = datetime.now(timezone.utc) - ack_at
+        if elapsed > self._fall_ack_cooldown_duration:
+            del self._fall_ack_cooldowns[identity]
+            return False
+        logger.debug(
+            "Fall alarm suppressed for %s - within post-ack cooldown (%.1fs/%.1fs elapsed).",
+            identity,
+            elapsed.total_seconds(),
+            self._fall_ack_cooldown_duration.total_seconds(),
+        )
+        return True
+
+    def _fall_alarm_identity(self, alarm: AlarmRecord) -> str:
+        metadata = alarm.metadata if isinstance(alarm.metadata, dict) else {}
+        camera_id = str(metadata.get("camera_id") or "").strip().lower()
+        if camera_id:
+            return f"camera:{camera_id}"
+        incident_id = str(metadata.get("incident_id") or "").strip()
+        if incident_id:
+            return f"incident:{incident_id}"
+        return f"device:{self._normalize_mac(alarm.device_mac)}"
+
     def _find_active_sos_index(self, alarm: AlarmRecord) -> int | None:
         if alarm.alarm_type.value != "sos":
             return None
-        now = datetime.now(timezone.utc)
         incoming_mac = self._normalize_mac(alarm.device_mac)
         last_non_sos_at = self._last_non_sos_sample_at.get(incoming_mac)
         for index in range(len(self._alarms) - 1, -1, -1):
@@ -223,14 +286,30 @@ class AlarmService:
             # A single SOS button press causes multiple broadcast packets.
             # Group unacknowledged packets within the configured dedupe window.
             # If an unacknowledged alarm is older than that window, treat it as
-            # stale and clear it so a fresh SOS can trigger a new popup.
-            age = now - existing.created_at
+            # stale relative to the incoming event and clear it so a fresh SOS
+            # can trigger a new popup.
+            age = alarm.created_at - existing.created_at
             if age > self._sos_dedupe_window:
                 self._alarms[index] = existing.model_copy(update={"acknowledged": True})
                 self._queue.remove(existing.id)
                 continue
             return index
         return None
+
+    def _refresh_active_sos_alarm(self, existing_index: int, incoming: AlarmRecord) -> None:
+        existing = self._alarms[existing_index]
+        metadata = dict(existing.metadata if isinstance(existing.metadata, dict) else {})
+        incoming_metadata = incoming.metadata if isinstance(incoming.metadata, dict) else {}
+
+        occurrence_count = int(metadata.get("occurrence_count") or 1)
+        metadata.update(incoming_metadata)
+        metadata["occurrence_count"] = occurrence_count + 1
+        metadata["latest_event_at"] = incoming.created_at.astimezone(timezone.utc).isoformat()
+
+        refreshed = existing.model_copy(update={"metadata": metadata})
+        self._alarms[existing_index] = refreshed
+        self._queue.remove(existing.id)
+        self._queue.enqueue(refreshed)
 
     def _collapse_active_sos_duplicates(self, *, device_mac: str, keep_alarm_id: str) -> None:
         normalized_mac = self._normalize_mac(device_mac)

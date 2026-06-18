@@ -6,6 +6,12 @@ class ServerEndpointConfig extends ChangeNotifier {
   static const _keyHost = 'server_host';
   static const _keyPort = 'server_port';
   static const _keyScheme = 'server_scheme';
+  static const _envHost =
+      String.fromEnvironment('APP_SERVER_HOST', defaultValue: '');
+  static const _envPort =
+      int.fromEnvironment('APP_SERVER_PORT', defaultValue: -1);
+  static const _envScheme =
+      String.fromEnvironment('APP_SERVER_SCHEME', defaultValue: '');
 
   final SharedPreferences _prefs;
 
@@ -15,9 +21,13 @@ class ServerEndpointConfig extends ChangeNotifier {
   int _revision = 0;
 
   ServerEndpointConfig(this._prefs) {
-    _host = _prefs.getString(_keyHost) ?? _defaultHost();
-    _port = _prefs.getInt(_keyPort) ?? 8000;
-    _scheme = _normalizeScheme(_prefs.getString(_keyScheme) ?? 'http');
+    final storedHost = _prefs.getString(_keyHost)?.trim();
+    final storedPort = _prefs.getInt(_keyPort);
+    final storedScheme = _prefs.getString(_keyScheme);
+
+    _host = _configuredHost(storedHost);
+    _port = _configuredPort(storedPort);
+    _scheme = _configuredScheme(storedScheme);
   }
 
   String get host => _host;
@@ -27,10 +37,37 @@ class ServerEndpointConfig extends ChangeNotifier {
 
   String get origin => '$_scheme://$_host:$_port';
   String get apiBaseUrl => '$origin/api/v1/';
-  String get wsBaseUrl => '${_scheme == 'https' ? 'wss' : 'ws'}://$_host:$_port';
+  String get wsBaseUrl =>
+      '${_scheme == 'https' ? 'wss' : 'ws'}://$_host:$_port';
 
   static String _normalizeScheme(String value) {
     return value.toLowerCase() == 'https' ? 'https' : 'http';
+  }
+
+  static String _configuredHost(String? storedHost) {
+    final envHost = _envHost.trim();
+    if (envHost.isNotEmpty) {
+      return envHost;
+    }
+    if (storedHost != null && storedHost.isNotEmpty) {
+      return storedHost;
+    }
+    return _defaultHost();
+  }
+
+  static int _configuredPort(int? storedPort) {
+    if (_envPort > 0) {
+      return _envPort;
+    }
+    return storedPort ?? 8000;
+  }
+
+  static String _configuredScheme(String? storedScheme) {
+    final envScheme = _envScheme.trim();
+    if (envScheme.isNotEmpty) {
+      return _normalizeScheme(envScheme);
+    }
+    return _normalizeScheme(storedScheme ?? 'http');
   }
 
   static String _defaultHost() {

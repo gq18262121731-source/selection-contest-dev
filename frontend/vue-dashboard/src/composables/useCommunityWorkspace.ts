@@ -69,7 +69,15 @@ const selectedDevice = computed<CommunityDashboardDeviceItem | null>(
 );
 const selectedStructured = computed(() => selectedDevice.value?.structured_health ?? null);
 const isAwaitingSelectedRealtime = computed(
-  () => false
+  () => {
+    const mac = selectedDeviceMac.value;
+    const device = selectedDevice.value;
+    if (!mac || !device || device.ingest_mode !== "serial" || device.device_status === "offline") {
+      return false;
+    }
+    const gate = getSerialGate(mac);
+    return Boolean(gate && !gate.hasFreshSample);
+  },
 );
 
 function getDeviceByMac(mac: string): CommunityDashboardDeviceItem | null {
@@ -78,6 +86,12 @@ function getDeviceByMac(mac: string): CommunityDashboardDeviceItem | null {
 
 function isSerialDevice(mac: string) {
   return getDeviceByMac(mac)?.ingest_mode === "serial";
+}
+
+function canRunRealtimeRuntime(mac: string) {
+  const device = getDeviceByMac(mac);
+  if (!device) return false;
+  return device.device_status !== "offline";
 }
 
 function getSerialGate(mac: string): SerialSelectionGate | null {
@@ -458,13 +472,18 @@ async function refreshDashboardData() {
     }
 
     lastSyncAt.value = data.metrics.last_sync_at ? new Date(data.metrics.last_sync_at) : new Date();
-    if (
-      activeConsumers > 0
-      && selectedDeviceMac.value
-      && isSerialDevice(selectedDeviceMac.value)
-      && getSerialGate(selectedDeviceMac.value) === null
-    ) {
-      void handleSelectedDeviceChange(selectedDeviceMac.value);
+    if (activeConsumers > 0 && selectedDeviceMac.value) {
+      if (!canRunRealtimeRuntime(selectedDeviceMac.value)) {
+        serialSelectionGate.value = null;
+        stopTrendRuntime();
+      } else if (
+        isSerialDevice(selectedDeviceMac.value)
+        && getSerialGate(selectedDeviceMac.value) === null
+      ) {
+        void handleSelectedDeviceChange(selectedDeviceMac.value);
+      } else if (trendTimer === null && healthSocket === null) {
+        void startTrendRuntime();
+      }
     }
   } catch (error) {
     summary.value = null;
@@ -554,7 +573,7 @@ async function syncSelectedSerialTarget(mac: string) {
 async function startTrendRuntime() {
   stopTrendRuntime();
   const mac = selectedDeviceMac.value;
-  if (!mac) return;
+  if (!mac || !canRunRealtimeRuntime(mac)) return;
   const runtimeVersion = ++trendRuntimeVersion;
 
   connectHealthSocket(mac);
@@ -568,6 +587,11 @@ async function startTrendRuntime() {
 
 async function handleSelectedDeviceChange(mac: string) {
   if (!mac) {
+    serialSelectionGate.value = null;
+    stopTrendRuntime();
+    return;
+  }
+  if (!canRunRealtimeRuntime(mac)) {
     serialSelectionGate.value = null;
     stopTrendRuntime();
     return;

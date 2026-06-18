@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -185,3 +186,153 @@ def test_display_ready_sample_accepts_raw_serial_temperature_below_30() -> None:
     )
 
     assert dependencies.is_display_ready_sample(sample, DeviceIngestMode.SERIAL) is True
+
+
+def test_prepare_ingest_sample_merges_partial_serial_sample_before_validation(monkeypatch) -> None:
+    latest_valid = HealthSample(
+        device_mac="54:10:26:01:00:DF",
+        timestamp=datetime.now(timezone.utc) - timedelta(seconds=5),
+        heart_rate=81,
+        temperature=36.53,
+        blood_oxygen=97,
+        blood_pressure="121/79",
+        battery=88,
+        source=IngestionSource.SERIAL,
+        packet_type="response_ab",
+    )
+    partial_response_b = HealthSample(
+        device_mac="54:10:26:01:00:DF",
+        timestamp=datetime.now(timezone.utc),
+        heart_rate=0,
+        temperature=0.0,
+        blood_oxygen=0,
+        blood_pressure="129/71",
+        battery=80,
+        source=IngestionSource.SERIAL,
+        packet_type="response_b",
+    )
+
+    monkeypatch.setattr(dependencies, "_data_generator", SimpleNamespace(personas=[]))
+    monkeypatch.setattr(dependencies, "_stream_service", SimpleNamespace(latest=lambda mac: latest_valid))
+
+    normalized, reasons = dependencies._prepare_ingest_sample(partial_response_b, DeviceIngestMode.SERIAL)
+
+    assert reasons == []
+    assert normalized.heart_rate == 81
+    assert normalized.blood_oxygen == 97
+    assert normalized.temperature == 36.53
+    assert normalized.blood_pressure == "129/71"
+
+
+def test_prepare_ingest_sample_rejects_all_zero_serial_sample_without_latest(monkeypatch) -> None:
+    sample = HealthSample(
+        device_mac="54:10:26:01:00:DF",
+        timestamp=datetime.now(timezone.utc),
+        heart_rate=0,
+        temperature=0.0,
+        blood_oxygen=0,
+        blood_pressure="0/0",
+        battery=0,
+        source=IngestionSource.SERIAL,
+        packet_type="response_a",
+    )
+
+    monkeypatch.setattr(dependencies, "_data_generator", SimpleNamespace(personas=[]))
+    monkeypatch.setattr(dependencies, "_stream_service", SimpleNamespace(latest=lambda mac: None))
+
+    normalized, reasons = dependencies._prepare_ingest_sample(sample, DeviceIngestMode.SERIAL)
+
+    assert normalized == sample
+    assert set(reasons) == {"heart_rate", "blood_oxygen", "temperature", "blood_pressure"}
+
+
+def test_prepare_ingest_sample_rejects_explicit_all_zero_mock_sample_even_with_latest(monkeypatch) -> None:
+    latest_valid = HealthSample(
+        device_mac="AA:BB:CC:11:22:33",
+        timestamp=datetime.now(timezone.utc) - timedelta(seconds=5),
+        heart_rate=82,
+        temperature=36.6,
+        blood_oxygen=98,
+        blood_pressure="118/76",
+        battery=70,
+        source=IngestionSource.MOCK,
+        packet_type="response_ab",
+    )
+    sample = HealthSample(
+        device_mac="AA:BB:CC:11:22:33",
+        timestamp=datetime.now(timezone.utc),
+        heart_rate=0,
+        temperature=0.0,
+        blood_oxygen=0,
+        blood_pressure="0/0",
+        battery=70,
+        source=IngestionSource.MOCK,
+        packet_type="manual_test",
+    )
+
+    monkeypatch.setattr(dependencies, "_data_generator", SimpleNamespace(personas=[]))
+    monkeypatch.setattr(dependencies, "_stream_service", SimpleNamespace(latest=lambda mac: latest_valid))
+
+    normalized, reasons = dependencies._prepare_ingest_sample(sample, DeviceIngestMode.MOCK)
+
+    assert normalized == sample
+    assert set(reasons) == {"heart_rate", "blood_oxygen", "temperature", "blood_pressure"}
+
+
+def test_invalid_runtime_sample_reasons_keep_real_abnormal_values(monkeypatch) -> None:
+    sample = HealthSample(
+        device_mac="54:10:26:01:00:DF",
+        timestamp=datetime.now(timezone.utc),
+        heart_rate=130,
+        temperature=38.5,
+        blood_oxygen=88,
+        blood_pressure="138/92",
+        battery=76,
+        source=IngestionSource.SERIAL,
+        packet_type="response_ab",
+    )
+
+    monkeypatch.setattr(dependencies, "_data_generator", SimpleNamespace(personas=[]))
+
+    assert dependencies._invalid_runtime_sample_reasons(sample, DeviceIngestMode.SERIAL) == []
+
+
+def test_ingest_sample_drops_invalid_sample_before_alarm_evaluation(monkeypatch) -> None:
+    sample = HealthSample(
+        device_mac="54:10:26:01:00:DF",
+        timestamp=datetime.now(timezone.utc),
+        heart_rate=0,
+        temperature=0.0,
+        blood_oxygen=0,
+        blood_pressure="0/0",
+        battery=0,
+        source=IngestionSource.SERIAL,
+        packet_type="response_a",
+    )
+    calls = {"observe": 0, "evaluate": 0}
+
+    def _observe(_: HealthSample) -> None:
+        calls["observe"] += 1
+
+    def _evaluate(_: HealthSample) -> list[object]:
+        calls["evaluate"] += 1
+        return []
+
+    monkeypatch.setattr(dependencies, "_settings", SimpleNamespace(data_mode="formal", use_mock_data=False))
+    monkeypatch.setattr(dependencies, "_data_generator", SimpleNamespace(personas=[]))
+    monkeypatch.setattr(
+        dependencies,
+        "_device_service",
+        SimpleNamespace(
+            get_device=lambda mac: DeviceRecord(mac_address=mac, ingest_mode=DeviceIngestMode.SERIAL),
+            update_status=lambda *args, **kwargs: None,
+        ),
+    )
+    monkeypatch.setattr(dependencies, "_stream_service", SimpleNamespace(latest=lambda mac: None))
+    monkeypatch.setattr(dependencies, "_alarm_service", SimpleNamespace(observe_sample=_observe, evaluate=_evaluate))
+
+    result = asyncio.run(dependencies.ingest_sample(sample))
+
+    assert result.success is False
+    assert result.message == "INVALID_SAMPLE_DROPPED:heart_rate,blood_oxygen,temperature,blood_pressure"
+    assert calls == {"observe": 0, "evaluate": 0}

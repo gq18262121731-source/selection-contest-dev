@@ -1,10 +1,15 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../widgets/logout_action.dart';
 import '../../agent/widgets/ai_chat_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/network/server_endpoint_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../session/models/user_model.dart';
+import '../../settings/screens/server_settings_screen.dart';
 import '../../voice/screens/voice_screen.dart';
 import '../models/care_profile_model.dart';
 import '../providers/care_provider.dart';
@@ -35,6 +40,7 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
   Widget build(BuildContext context) {
     final careProvider = context.watch<CareProvider>();
     final authUser = context.watch<AuthProvider>().user;
+    final endpoint = context.watch<ServerEndpointConfig>();
     final profile = careProvider.profile;
     final metric = profile != null && profile.deviceMetrics.isNotEmpty
         ? profile.deviceMetrics.first
@@ -56,9 +62,22 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: AppColors.textMain),
-        actions: const [LogoutAction()],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_ethernet, color: AppColors.textSub),
+            tooltip: '服务器设置',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ServerSettingsScreen(),
+                ),
+              );
+            },
+          ),
+          const LogoutAction(),
+        ],
       ),
-      body: _buildBody(careProvider, elderName, metric),
+      body: _buildBody(careProvider, elderName, metric, authUser, endpoint),
     );
   }
 
@@ -66,6 +85,8 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
     CareProvider provider,
     String elderName,
     CareAccessDeviceMetric? metric,
+    SessionUser? authUser,
+    ServerEndpointConfig endpoint,
   ) {
     if (provider.status == CareLoadStatus.loading && provider.profile == null) {
       return const Center(
@@ -80,12 +101,31 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
           children: [
             Text(
               provider.errorMessage ?? '加载失败',
-              style: const TextStyle(color: AppColors.textSub, fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: AppColors.textSub,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => provider.fetchProfile(),
-              child: const Text('重试', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+              child: const Text('重试',
+                  style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white)),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ServerSettingsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.settings_ethernet),
+              label: const Text('服务器设置'),
             ),
           ],
         ),
@@ -171,9 +211,158 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                       ? '当前账号已绑定到有效设备链路，可查看设备指标、评估结果和健康报告摘要。'
                       : '请先登记并绑定手环，绑定成功后就能在这里看到实时指标和提醒。',
             ),
+            const SizedBox(height: 20),
+            _buildDebugCard(provider, metric, authUser, endpoint),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDebugCard(
+    CareProvider provider,
+    CareAccessDeviceMetric? metric,
+    SessionUser? authUser,
+    ServerEndpointConfig endpoint,
+  ) {
+    final profile = provider.profile;
+    final latestSample = metric?.latestSample;
+    final requestUrl = '${endpoint.origin}/api/v1/care/access-profile/me';
+
+    final rawSummary = <String, dynamic>{
+      'binding_state': profile?.bindingState,
+      'bound_device_macs': profile?.boundDeviceMacs,
+      'latest_sample': latestSample,
+    };
+    final parsedSummary = <String, dynamic>{
+      'device_mac': metric?.deviceMac,
+      'device_name': metric?.deviceName,
+      'device_status': metric?.deviceStatus,
+      'heart_rate': metric?.heartRate,
+      'blood_oxygen': metric?.bloodOxygen,
+      'temperature': metric?.temperature,
+      'blood_pressure': metric?.bloodPressure,
+      'battery': metric?.battery,
+      'steps': metric?.steps,
+      'health_score': metric?.healthScore,
+      'has_realtime_sample': metric?.hasRealtimeSample,
+    };
+
+    return ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      collapsedShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      backgroundColor: AppColors.surface,
+      collapsedBackgroundColor: AppColors.surface,
+      title: const Text(
+        '手环调试信息',
+        style: TextStyle(
+          color: AppColors.textMain,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: const Text(
+        '如果老人端没有显示数据，请截图这里的信息',
+        style: TextStyle(color: AppColors.textSub),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDebugRow('当前用户', authUser?.username ?? '--'),
+              const SizedBox(height: 8),
+              _buildDebugRow('当前角色', authUser?.role ?? '--'),
+              const SizedBox(height: 8),
+              _buildDebugRow('主系统', endpoint.origin),
+              const SizedBox(height: 8),
+              _buildDebugRow('请求 URL', requestUrl),
+              const SizedBox(height: 8),
+              _buildDebugRow('绑定状态', profile?.bindingState ?? '--'),
+              const SizedBox(height: 8),
+              _buildDebugRow(
+                '绑定设备',
+                (profile?.boundDeviceMacs.isNotEmpty ?? false)
+                    ? profile!.boundDeviceMacs.join(', ')
+                    : '--',
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'access-profile 原始关键信息',
+                style: TextStyle(
+                  color: AppColors.textSub,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              SelectableText(
+                const JsonEncoder.withIndent('  ').convert(rawSummary),
+                style: const TextStyle(
+                  color: AppColors.textMain,
+                  fontSize: 12,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '页面解析后的模型字段',
+                style: TextStyle(
+                  color: AppColors.textSub,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              SelectableText(
+                const JsonEncoder.withIndent('  ').convert(parsedSummary),
+                style: const TextStyle(
+                  color: AppColors.textMain,
+                  fontSize: 12,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDebugRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 78,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSub,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SelectableText(
+            value,
+            style: const TextStyle(
+              color: AppColors.textMain,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -242,7 +431,9 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
           Icon(
             hasDevice ? Icons.watch : Icons.watch_off,
             size: 64,
-            color: hasDevice ? (isOnline ? Colors.green : Colors.orange) : Colors.red,
+            color: hasDevice
+                ? (isOnline ? Colors.green : Colors.orange)
+                : Colors.red,
           ),
           const SizedBox(height: 16),
           Text(
@@ -258,14 +449,20 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
             Text(
               '${metric.deviceName} · ${metric.deviceMac}',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: AppColors.textSub,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
           ] else ...[
             const SizedBox(height: 8),
             const Text(
               '请戴好手环，数据会自动同步。',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: AppColors.textSub,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
           ],
           const SizedBox(height: 12),
@@ -273,11 +470,15 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.battery_full, color: AppColors.success, size: 28),
+                const Icon(Icons.battery_full,
+                    color: AppColors.success, size: 28),
                 const SizedBox(width: 8),
                 Text(
                   '电量: $battery',
-                  style: const TextStyle(color: AppColors.textMain, fontSize: 24, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      color: AppColors.textMain,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -359,7 +560,10 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
           const SizedBox(height: 12),
           Text(
             label,
-            style: const TextStyle(color: AppColors.textSub, fontSize: 24, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+                color: AppColors.textSub,
+                fontSize: 24,
+                fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           RichText(
@@ -376,7 +580,10 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                 ),
                 TextSpan(
                   text: ' $unit',
-                  style: const TextStyle(color: AppColors.textSub, fontSize: 24, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                      color: AppColors.textSub,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900),
                 ),
               ],
             ),
@@ -388,13 +595,15 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
 
   Widget _buildBindDeviceButton(CareProvider provider) {
     return ElevatedButton.icon(
-      onPressed:
-          provider.isMutating ? null : () => _showBindDeviceDialogSafely(provider),
+      onPressed: provider.isMutating
+          ? null
+          : () => _showBindDeviceDialogSafely(provider),
       icon: provider.isMutating
           ? const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
             )
           : const Icon(Icons.add_link, size: 32, color: Colors.white),
       label: Text(
@@ -448,7 +657,10 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
                       onPressed: () => Navigator.pop(dialogContext, false),
                       child: const Text(
                         '取消',
-                        style: TextStyle(color: AppColors.textSub, fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: AppColors.textSub,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                     TextButton(
@@ -486,7 +698,8 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
           ? const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.warning),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppColors.warning),
             )
           : const Icon(Icons.link_off, size: 28, color: AppColors.warning),
       label: Text(
@@ -535,7 +748,11 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
           const SizedBox(height: 16),
           Text(
             label,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: color, letterSpacing: 2),
+            style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: color,
+                letterSpacing: 2),
           ),
         ],
       ),
@@ -556,7 +773,10 @@ class _ElderHomeScreenState extends State<ElderHomeScreen> {
         children: [
           const Text(
             '今日健康建议',
-            style: TextStyle(color: AppColors.elderBlueText, fontSize: 32, fontWeight: FontWeight.w900),
+            style: TextStyle(
+                color: AppColors.elderBlueText,
+                fontSize: 32,
+                fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 16),
           Text(

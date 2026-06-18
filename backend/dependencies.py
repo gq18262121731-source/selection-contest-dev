@@ -91,6 +91,7 @@ _alarm_service = AlarmService(
     queue=_alarm_priority_queue,
     notification_service=_notification_service,
     sos_dedupe_window_seconds=_settings.sos_broadcast_window_seconds,
+    fall_ack_cooldown_seconds=_settings.fall_detection_incident_reopen_seconds,
 )
 _baseline_tracker = BaselineTracker()
 _health_score_service = DemoHealthScoreService(floor=_settings.health_score_floor)
@@ -1243,6 +1244,142 @@ def _merge_with_latest(sample: HealthSample) -> HealthSample:
     return sample.model_copy(update=update) if update else sample
 
 
+_VALID_HEART_RATE_RANGE = (30, 220)
+_VALID_BLOOD_OXYGEN_RANGE = (50, 100)
+_VALID_TEMPERATURE_RANGE = (30.0, 43.0)
+_VALID_SYSTOLIC_RANGE = (60, 240)
+_VALID_DIASTOLIC_RANGE = (30, 160)
+
+
+def _value_in_range(value: int | float | None, *, lower: float, upper: float) -> bool:
+    if value is None:
+        return False
+    return lower <= float(value) <= upper
+
+
+def _parse_blood_pressure(value: str | None) -> tuple[int, int] | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or text == "0/0":
+        return None
+    try:
+        systolic_text, diastolic_text = text.split("/", maxsplit=1)
+        return int(systolic_text), int(diastolic_text)
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+
+def _invalid_runtime_sample_reasons(
+    sample: HealthSample,
+    ingest_mode: DeviceIngestMode | str | None,
+) -> list[str]:
+    if sample.sos_flag:
+        return []
+
+    reasons: list[str] = []
+    if not _value_in_range(
+        sample.heart_rate,
+        lower=_VALID_HEART_RATE_RANGE[0],
+        upper=_VALID_HEART_RATE_RANGE[1],
+    ):
+        reasons.append("heart_rate")
+    if not _value_in_range(
+        sample.blood_oxygen,
+        lower=_VALID_BLOOD_OXYGEN_RANGE[0],
+        upper=_VALID_BLOOD_OXYGEN_RANGE[1],
+    ):
+        reasons.append("blood_oxygen")
+    if not _value_in_range(
+        sample.temperature,
+        lower=_VALID_TEMPERATURE_RANGE[0],
+        upper=_VALID_TEMPERATURE_RANGE[1],
+    ):
+        reasons.append("temperature")
+
+    blood_pressure = _parse_blood_pressure(sample.blood_pressure)
+    if sample.blood_pressure:
+        if blood_pressure is None:
+            reasons.append("blood_pressure")
+        else:
+            systolic, diastolic = blood_pressure
+            if not _value_in_range(
+                systolic,
+                lower=_VALID_SYSTOLIC_RANGE[0],
+                upper=_VALID_SYSTOLIC_RANGE[1],
+            ) or not _value_in_range(
+                diastolic,
+                lower=_VALID_DIASTOLIC_RANGE[0],
+                upper=_VALID_DIASTOLIC_RANGE[1],
+            ):
+                reasons.append("blood_pressure")
+
+    return reasons
+
+
+def _explicit_zero_placeholder_reasons(
+    sample: HealthSample,
+) -> list[str]:
+    if sample.sos_flag:
+        return []
+
+    reasons: list[str] = []
+    if sample.heart_rate <= 0:
+        reasons.append("heart_rate")
+    if sample.blood_oxygen <= 0:
+        reasons.append("blood_oxygen")
+    if sample.temperature <= 0:
+        reasons.append("temperature")
+
+    blood_pressure = _parse_blood_pressure(sample.blood_pressure)
+    blood_pressure_invalid = sample.blood_pressure is None or blood_pressure is None
+    if blood_pressure_invalid:
+        reasons.append("blood_pressure")
+
+    if {
+        "heart_rate",
+        "blood_oxygen",
+        "temperature",
+    }.issubset(reasons) and blood_pressure_invalid:
+        return reasons
+    return []
+
+
+def _prepare_ingest_sample(
+    sample: HealthSample,
+    ingest_mode: DeviceIngestMode | str | None,
+) -> tuple[HealthSample, list[str]]:
+    explicit_zero_reasons = _explicit_zero_placeholder_reasons(sample)
+    if explicit_zero_reasons:
+        return sample, explicit_zero_reasons
+    normalized = _merge_with_latest(sample)
+    reasons = _invalid_runtime_sample_reasons(normalized, ingest_mode)
+    return normalized, reasons
+
+
+def _log_dropped_invalid_sample(
+    raw_sample: HealthSample,
+    normalized_sample: HealthSample,
+    reasons: list[str],
+) -> None:
+    logger.warning(
+        "Dropping invalid health sample before alarm evaluation: mac=%s source=%s packet_type=%s timestamp=%s reasons=%s raw(hr=%s spo2=%s temp=%s bp=%s) normalized(hr=%s spo2=%s temp=%s bp=%s)",
+        raw_sample.device_mac,
+        raw_sample.source.value,
+        raw_sample.packet_type,
+        raw_sample.timestamp.isoformat(),
+        ",".join(reasons),
+        raw_sample.heart_rate,
+        raw_sample.blood_oxygen,
+        raw_sample.temperature,
+        raw_sample.blood_pressure,
+        normalized_sample.heart_rate,
+        normalized_sample.blood_oxygen,
+        normalized_sample.temperature,
+        normalized_sample.blood_pressure,
+    )
+
+
 def _persist_structured_health_score(sample: HealthSample, device: DeviceRecord) -> None:
     """Persist ML/rule split scores so dashboard can render rule/model breakdown."""
     systolic, diastolic = sample.blood_pressure_pair
@@ -1361,11 +1498,21 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
 
     _device_service.update_status(sample.device_mac, DeviceStatus.ONLINE)
 
+    raw_sample = sample
+    sample, invalid_reasons = _prepare_ingest_sample(sample, device.ingest_mode)
+    if invalid_reasons:
+        _log_dropped_invalid_sample(raw_sample, sample, invalid_reasons)
+        return IngestResponse(
+            success=False,
+            message=f"INVALID_SAMPLE_DROPPED:{','.join(invalid_reasons)}",
+            device_mac=sample.device_mac,
+        )
+
     _alarm_service.observe_sample(sample)
 
-    # 【性能优化】第一时间评估并提取实时告警（包括SOS）。直接评估未 merged 的 sample_0。
+    # 【性能优化】第一时间评估并提取实时告警（包括SOS），但必须基于已归一化的有效样本。
     realtime_alarms = _alarm_service.evaluate(sample)
-    
+
     # 若有紧急告警，第一时间 WebSocket 广播，避免被后续同步数据库写操作阻塞而导致高延迟
     if realtime_alarms:
         _health_data_repository.persist_alerts(realtime_alarms)
@@ -1378,9 +1525,6 @@ async def ingest_sample(sample: HealthSample) -> IngestResponse:
                 "snapshot": _alarm_service.queue_snapshot(),
             }
         )
-
-    # 之后合并历史以填补异常的0或缺失数据，保证展示与入库的质量
-    sample = _merge_with_latest(sample)
 
     baseline = _baseline_tracker.observe(sample)
     sample.health_score = _health_score_service.score(sample, baseline)

@@ -6,6 +6,7 @@ import '../../../core/network/server_endpoint_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/logout_action.dart';
 import '../../alarm/providers/alarm_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../care/providers/care_provider.dart';
 import '../widgets/vision_connection_debug_dialog.dart';
 
@@ -53,11 +54,34 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     });
 
     final config = context.read<ServerEndpointConfig>();
+    final host = _hostController.text;
+    final port = int.parse(_portController.text);
     final error = await config.testConnection(
-      host: _hostController.text,
-      port: int.parse(_portController.text),
+      host: host,
+      port: port,
       scheme: _scheme,
     );
+
+    if (error == null) {
+      await config.save(
+        host: host,
+        port: port,
+        scheme: _scheme,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final authStatus = context.read<AuthProvider>().status;
+      if (authStatus == AuthStatus.authenticated) {
+        final careProvider = context.read<CareProvider>();
+        careProvider.fetchProfile(silent: true);
+
+        final alarmProvider = context.read<AlarmProvider>();
+        alarmProvider.reloadFromEndpointChange();
+      }
+    }
 
     if (!mounted) {
       return;
@@ -65,7 +89,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
 
     setState(() {
       _isTesting = false;
-      _testResult = error ?? '连接成功，后端健康检查通过。';
+      _testResult = error ?? '连接成功，已自动保存并应用当前服务器地址。';
     });
   }
 

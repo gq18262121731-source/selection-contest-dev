@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import StreamingResponse
@@ -21,6 +22,11 @@ from backend.services.camera_service import CameraService
 
 router = APIRouter(prefix="/camera", tags=["camera"])
 
+_LAST_GOOD_PROCESSED_FRAME: bytes | None = None
+_LAST_GOOD_PROCESSED_FRAME_AT: float | None = None
+_LAST_GOOD_PROCESSED_FRAME_SOURCE = "none"
+_STALE_FRAME_MAX_AGE_SECONDS = 15.0
+
 
 class CameraSetupConfigRequest(BaseModel):
     camera_source_mode: str | None = None
@@ -34,6 +40,97 @@ class CameraSetupConfigRequest(BaseModel):
     camera_stream_rtsp_path: str | None = None
     camera_audio_rtsp_path: str | None = None
     camera_onvif_port: int | None = None
+
+
+def _frame_response(
+    frame: bytes,
+    *,
+    source: str,
+    stale: bool = False,
+) -> Response:
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "X-Camera-Source": source,
+    }
+    if stale:
+        headers["X-Frame-Stale"] = "true"
+    return Response(content=frame, media_type="image/jpeg", headers=headers)
+
+
+def _remember_last_good_processed_frame(frame: bytes, *, source: str) -> None:
+    global _LAST_GOOD_PROCESSED_FRAME, _LAST_GOOD_PROCESSED_FRAME_AT, _LAST_GOOD_PROCESSED_FRAME_SOURCE
+
+    if not frame:
+        return
+    _LAST_GOOD_PROCESSED_FRAME = frame
+    _LAST_GOOD_PROCESSED_FRAME_AT = time.time()
+    _LAST_GOOD_PROCESSED_FRAME_SOURCE = source
+
+
+def _recent_last_good_processed_frame() -> tuple[bytes, str] | None:
+    if _LAST_GOOD_PROCESSED_FRAME is None or _LAST_GOOD_PROCESSED_FRAME_AT is None:
+        return None
+    if time.time() - _LAST_GOOD_PROCESSED_FRAME_AT > _STALE_FRAME_MAX_AGE_SECONDS:
+        return None
+    return _LAST_GOOD_PROCESSED_FRAME, _LAST_GOOD_PROCESSED_FRAME_SOURCE
+
+
+def _latest_cached_frame() -> tuple[bytes, str] | None:
+    frame = get_camera_processed_frame_hub().latest_frame()
+    if frame is not None:
+        return frame, "processed-frame-cache"
+    frame = get_camera_frame_hub().latest_frame()
+    if frame is not None:
+        return frame, "raw-frame-cache"
+    return None
+
+
+def _latest_raw_cached_frame() -> tuple[bytes, str] | None:
+    frame = get_camera_frame_hub().latest_frame()
+    if frame is not None:
+        return frame, "raw-frame-cache"
+    return None
+
+
+async def _warm_frame_hubs() -> None:
+    await asyncio.gather(
+        get_camera_frame_hub().start_keep_warm(),
+        get_camera_processed_frame_hub().start_keep_warm(),
+    )
+
+
+async def _wait_for_cached_frame() -> tuple[bytes, str] | None:
+    await _warm_frame_hubs()
+    cached = _latest_cached_frame()
+    if cached is not None:
+        return cached
+    for _ in range(4):
+        await asyncio.sleep(0.15)
+        cached = _latest_cached_frame()
+        if cached is not None:
+            return cached
+    return None
+
+
+async def _wait_for_raw_cached_frame() -> tuple[bytes, str] | None:
+    await get_camera_frame_hub().start_keep_warm()
+    cached = _latest_raw_cached_frame()
+    if cached is not None:
+        return cached
+    for _ in range(4):
+        await asyncio.sleep(0.15)
+        cached = _latest_raw_cached_frame()
+        if cached is not None:
+            return cached
+    return None
+
+
+async def _capture_snapshot_bytes() -> tuple[bytes, dict[str, str]]:
+    service = CameraService(get_camera_source_settings("active"))
+    if service.uses_runtime_managed_source():
+        return await asyncio.to_thread(service.capture_runtime_jpeg_fast)
+    return await asyncio.to_thread(service.capture_jpeg)
 
 
 @router.get("/status")
@@ -74,12 +171,8 @@ async def camera_stream_status() -> dict[str, object]:
 
 @router.get("/snapshot")
 async def camera_snapshot() -> Response:
-    service = CameraService(get_camera_source_settings("active"))
     try:
-        if service.uses_runtime_managed_source():
-            image_bytes, headers = await asyncio.to_thread(service.capture_runtime_jpeg_fast)
-        else:
-            image_bytes, headers = await asyncio.to_thread(service.capture_jpeg)
+        image_bytes, headers = await _capture_snapshot_bytes()
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
@@ -89,21 +182,52 @@ async def camera_snapshot() -> Response:
 
 @router.get("/processed-snapshot")
 async def camera_processed_snapshot() -> Response:
-    hub = get_camera_processed_frame_hub()
-    frame = hub.latest_frame()
-    if frame is None:
-        frame = get_camera_frame_hub().latest_frame()
-    if frame is None:
-        return await camera_snapshot()
-    return Response(
-        content=frame,
-        media_type="image/jpeg",
-        headers={
-            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-            "Pragma": "no-cache",
-            "X-Camera-Source": "processed-frame-cache",
-        },
-    )
+    cached = _latest_cached_frame()
+    if cached is None:
+        cached = await _wait_for_cached_frame()
+
+    if cached is not None:
+        frame, source = cached
+        _remember_last_good_processed_frame(frame, source=source)
+        return _frame_response(frame, source=source)
+
+    try:
+        image_bytes, _headers = await _capture_snapshot_bytes()
+    except RuntimeError as exc:
+        stale = _recent_last_good_processed_frame()
+        if stale is not None:
+            frame, stale_source = stale
+            return _frame_response(frame, source=f"{stale_source}-stale-fallback", stale=True)
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        stale = _recent_last_good_processed_frame()
+        if stale is not None:
+            frame, stale_source = stale
+            return _frame_response(frame, source=f"{stale_source}-stale-fallback", stale=True)
+        raise HTTPException(status_code=503, detail=f"CAMERA_SNAPSHOT_FAILED: {exc}") from exc
+
+    _remember_last_good_processed_frame(image_bytes, source="direct-snapshot-fallback")
+    return _frame_response(image_bytes, source="direct-snapshot-fallback")
+
+
+@router.get("/family-snapshot")
+async def camera_family_snapshot() -> Response:
+    cached = _latest_raw_cached_frame()
+    if cached is None:
+        cached = await _wait_for_raw_cached_frame()
+
+    if cached is not None:
+        frame, source = cached
+        return _frame_response(frame, source=source)
+
+    try:
+        image_bytes, _headers = await _capture_snapshot_bytes()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"CAMERA_SNAPSHOT_FAILED: {exc}") from exc
+
+    return _frame_response(image_bytes, source="direct-raw-snapshot-fallback")
 
 
 @router.get("/stream.mjpg")
@@ -114,6 +238,19 @@ async def camera_stream() -> StreamingResponse:
         headers={
             "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
             "Pragma": "no-cache",
+        },
+    )
+
+
+@router.get("/family-stream.mjpg")
+async def camera_family_stream() -> StreamingResponse:
+    return StreamingResponse(
+        get_camera_frame_hub().mjpeg_frames(),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "X-Camera-Stream": "family-stream",
         },
     )
 
