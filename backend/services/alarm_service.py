@@ -22,7 +22,7 @@ class AlarmService:
         *,
         sos_dedupe_window_seconds: int = 15,
         sos_release_window_seconds: int = 2,
-        fall_ack_cooldown_seconds: float = 20.0,
+        fall_ack_cooldown_seconds: float = 10.0,
     ) -> None:
         self._detector = detector
         self._queue = queue

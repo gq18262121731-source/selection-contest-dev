@@ -59,6 +59,7 @@ from backend.services.relation_service import RelationService
 from backend.services.stream_service import StreamService
 from backend.services.external_camera_bridge_service import ExternalCameraBridgeService
 from backend.services.fall_frame_test_service import FallFrameTestService
+from backend.services.family_camera_stream_service import FamilyCameraStreamService
 from backend.services.target_pose_service import TargetPoseService
 from backend.services.target_user_fall_service import TargetUserFallService
 from backend.services.target_user_service import TargetUserService
@@ -187,6 +188,7 @@ _camera_processed_frame_hub: CombinedProcessedFrameHub | None = None
 _camera_audio_hub: CameraAudioHub | None = None
 _camera_source_registry: CameraSourceRegistry | None = None
 _camera_setup_config_service: CameraSetupConfigService | None = None
+_family_camera_stream_service: FamilyCameraStreamService | None = None
 _camera_source_frame_hubs: dict[str, CameraFrameHub] = {}
 _camera_source_audio_hubs: dict[str, CameraAudioHub] = {}
 _camera_source_processed_hubs: dict[str, CombinedProcessedFrameHub] = {}
@@ -609,6 +611,13 @@ def get_camera_setup_config_service() -> CameraSetupConfigService:
     if _camera_setup_config_service is None:
         _camera_setup_config_service = CameraSetupConfigService(_settings, get_camera_source_registry())
     return _camera_setup_config_service
+
+
+def get_family_camera_stream_service() -> FamilyCameraStreamService:
+    global _family_camera_stream_service
+    if _family_camera_stream_service is None:
+        _family_camera_stream_service = FamilyCameraStreamService(_settings)
+    return _family_camera_stream_service
 
 
 def get_camera_source_settings(camera_id: str):

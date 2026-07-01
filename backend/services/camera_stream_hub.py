@@ -393,6 +393,11 @@ class CameraFrameHub:
         if stream_width > 0:
             filters.append(f"scale={stream_width}:-2:flags=bicubic")
         last_error = ""
+        first_frame_timeout = max(
+            8.0,
+            min(16.0, self._settings.camera_snapshot_timeout_seconds + 6.0),
+        )
+        steady_frame_timeout = 4.0
 
         for url in service.stream_rtsp_urls:
             async with self._lock:
@@ -436,6 +441,7 @@ class CameraFrameHub:
             )
             buffer = b""
             frame_count = 0
+            started_at = time.monotonic()
             last_frame_at = time.monotonic()
             self._active_url = url
 
@@ -448,14 +454,21 @@ class CameraFrameHub:
                         if not self._has_consumers():
                             return
 
+                    read_timeout = first_frame_timeout if frame_count == 0 else steady_frame_timeout
                     try:
-                        chunk = await asyncio.wait_for(process.stdout.read(65536), timeout=4.0)
+                        chunk = await asyncio.wait_for(process.stdout.read(65536), timeout=read_timeout)
                     except asyncio.TimeoutError:
-                        if frame_count == 0 or time.monotonic() - last_frame_at > 4.0:
+                        now = time.monotonic()
+                        if frame_count == 0 and now - started_at < first_frame_timeout:
+                            continue
+                        if frame_count == 0 or now - last_frame_at > steady_frame_timeout:
                             raise RuntimeError("CAMERA_STREAM_READ_TIMEOUT")
                         continue
 
                     if not chunk:
+                        if frame_count == 0 and time.monotonic() - started_at < first_frame_timeout:
+                            await asyncio.sleep(0.05)
+                            continue
                         break
 
                     buffer += chunk

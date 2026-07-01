@@ -413,7 +413,7 @@ class VideoBridgeService:
         self._expire_seen_keys(now_monotonic)
         dedupe_key = self._bridge_dedupe_key(event)
         if dedupe_key:
-            dedupe_window_seconds = max(1.0, float(self._settings.fall_detection_incident_reopen_seconds or 20.0))
+            dedupe_window_seconds = max(1.0, float(self._settings.fall_detection_incident_reopen_seconds or 10.0))
             previous_seen_at = self._bridge_seen_keys.get(dedupe_key)
             if previous_seen_at is not None and now_monotonic - previous_seen_at < dedupe_window_seconds:
                 self._vision_service_status.update(
@@ -711,7 +711,7 @@ class VideoBridgeService:
         return dict(self._runtime_config)
 
     def _expire_seen_keys(self, now_monotonic: float) -> None:
-        ttl_seconds = max(1.0, float(self._settings.fall_detection_incident_reopen_seconds or 20.0))
+        ttl_seconds = max(1.0, float(self._settings.fall_detection_incident_reopen_seconds or 10.0))
         expired = [
             key
             for key, seen_at in self._bridge_seen_keys.items()

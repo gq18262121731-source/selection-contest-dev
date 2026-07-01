@@ -20,8 +20,10 @@ class CameraSetupConfigService:
         "CAMERA_RTSP_PORT",
         "CAMERA_RTSP_PATH",
         "CAMERA_STREAM_RTSP_PATH",
+        "CAMERA_STREAM_QUALITY_PATH",
         "CAMERA_AUDIO_RTSP_PATH",
         "CAMERA_ONVIF_PORT",
+        "CAMERA_STREAM_PROFILE",
     }
     _KEY_TO_ATTR = {
         "CAMERA_SOURCE_MODE": "camera_source_mode",
@@ -33,8 +35,10 @@ class CameraSetupConfigService:
         "CAMERA_RTSP_PORT": "camera_rtsp_port",
         "CAMERA_RTSP_PATH": "camera_rtsp_path",
         "CAMERA_STREAM_RTSP_PATH": "camera_stream_rtsp_path",
+        "CAMERA_STREAM_QUALITY_PATH": "camera_stream_quality_path",
         "CAMERA_AUDIO_RTSP_PATH": "camera_audio_rtsp_path",
         "CAMERA_ONVIF_PORT": "camera_onvif_port",
+        "CAMERA_STREAM_PROFILE": "camera_stream_profile",
     }
 
     def __init__(self, settings: Settings, registry: CameraSourceRegistry) -> None:
@@ -53,8 +57,10 @@ class CameraSetupConfigService:
             "camera_rtsp_port": self._settings.camera_rtsp_port,
             "camera_rtsp_path": self._settings.camera_rtsp_path,
             "camera_stream_rtsp_path": self._settings.camera_stream_rtsp_path,
+            "camera_stream_quality_path": self._settings.camera_stream_quality_path,
             "camera_audio_rtsp_path": self._settings.camera_audio_rtsp_path,
             "camera_onvif_port": self._settings.camera_onvif_port,
+            "camera_stream_profile": self._settings.camera_stream_profile,
         }
 
     def temporary_settings(self, payload: dict[str, Any]) -> Settings:
@@ -119,6 +125,9 @@ class CameraSetupConfigService:
         if key == "CAMERA_LOCAL_BACKEND":
             backend = str(value or "any").strip().lower()
             return backend if backend in {"auto", "dshow", "msmf", "any"} else "any"
+        if key == "CAMERA_STREAM_PROFILE":
+            profile = str(value or "balanced").strip().lower()
+            return profile if profile in {"smooth", "balanced", "quality"} else "balanced"
         if key in {"CAMERA_LOCAL_INDEX", "CAMERA_RTSP_PORT", "CAMERA_ONVIF_PORT"}:
             return str(max(0, int(value or 0)))
         return str(value or "").strip()
@@ -148,8 +157,10 @@ class CameraSetupConfigService:
             "CAMERA_RTSP_PORT",
             "CAMERA_RTSP_PATH",
             "CAMERA_STREAM_RTSP_PATH",
+            "CAMERA_STREAM_QUALITY_PATH",
             "CAMERA_AUDIO_RTSP_PATH",
             "CAMERA_ONVIF_PORT",
+            "CAMERA_STREAM_PROFILE",
         }
         if not any(key in updates for key in camera_keys):
             return

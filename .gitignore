@@ -14,3 +14,5 @@ backend/tmp_x.txt
 .omni_test
 .log
 .pdf
+.impeccable.md
+runtime_logs/

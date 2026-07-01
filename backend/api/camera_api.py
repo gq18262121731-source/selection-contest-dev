@@ -16,6 +16,7 @@ from backend.dependencies import (
     get_camera_setup_config_service,
     get_camera_source_registry,
     get_camera_source_settings,
+    get_family_camera_stream_service,
 )
 from backend.services.camera_service import CameraService
 
@@ -38,8 +39,10 @@ class CameraSetupConfigRequest(BaseModel):
     camera_rtsp_port: int | None = None
     camera_rtsp_path: str | None = None
     camera_stream_rtsp_path: str | None = None
+    camera_stream_quality_path: str | None = None
     camera_audio_rtsp_path: str | None = None
     camera_onvif_port: int | None = None
+    camera_stream_profile: str | None = None
 
 
 def _frame_response(
@@ -160,12 +163,14 @@ async def camera_stream_status() -> dict[str, object]:
     processed = get_camera_processed_frame_hub().status()
     pose = get_camera_pose_frame_hub().status()
     detection = get_camera_detection_frame_hub().status()
+    family = get_family_camera_stream_service().status()
     return {
         "camera_id": active.camera_id,
         "raw": raw,
         "processed": processed,
         "pose": pose,
         "detection": detection,
+        "family": family,
     }
 
 
@@ -211,14 +216,42 @@ async def camera_processed_snapshot() -> Response:
 
 
 @router.get("/family-snapshot")
-async def camera_family_snapshot() -> Response:
+async def camera_family_snapshot(quality: str | None = None) -> Response:
+    family_service = get_family_camera_stream_service()
+    await family_service.prepare_profile(quality)
+    frame, family_status = await family_service.snapshot(quality)
+    normalized_quality = family_service.resolve_quality(quality)
+    if frame is not None:
+        source = f"family-{normalized_quality}-cache"
+        headers = {
+            "X-Family-Quality": normalized_quality,
+            "X-Family-Source": str(family_status.get("active_source_type") or "cache"),
+            "X-Family-Width": str(family_status.get("family_output_width") or 0),
+            "X-Family-Height": str(family_status.get("family_output_height") or 0),
+            "X-Family-Jpeg-Bytes": str(family_status.get("latest_jpeg_bytes") or len(frame)),
+        }
+        fallback_reason = str(family_status.get("fallback_reason") or "").strip()
+        response = _frame_response(frame, source=source)
+        if fallback_reason:
+            headers["X-Fallback-Reason"] = fallback_reason
+        response.headers.update(headers)
+        return response
+
     cached = _latest_raw_cached_frame()
     if cached is None:
         cached = await _wait_for_raw_cached_frame()
 
     if cached is not None:
         frame, source = cached
-        return _frame_response(frame, source=source)
+        response = _frame_response(frame, source=source)
+        response.headers["X-Family-Quality"] = normalized_quality
+        response.headers["X-Family-Source"] = "raw-fallback"
+        response.headers["X-Family-Width"] = str(family_status.get("family_output_width") or 0)
+        response.headers["X-Family-Height"] = str(family_status.get("family_output_height") or 0)
+        response.headers["X-Family-Jpeg-Bytes"] = str(len(frame))
+        fallback_reason = str(family_status.get("fallback_reason") or "FAMILY_CACHE_EMPTY").strip()
+        response.headers["X-Fallback-Reason"] = fallback_reason
+        return response
 
     try:
         image_bytes, _headers = await _capture_snapshot_bytes()
@@ -227,7 +260,14 @@ async def camera_family_snapshot() -> Response:
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"CAMERA_SNAPSHOT_FAILED: {exc}") from exc
 
-    return _frame_response(image_bytes, source="direct-raw-snapshot-fallback")
+    response = _frame_response(image_bytes, source="direct-raw-snapshot-fallback")
+    response.headers["X-Family-Quality"] = normalized_quality
+    response.headers["X-Family-Source"] = "direct-raw-snapshot-fallback"
+    response.headers["X-Family-Width"] = str(family_status.get("family_output_width") or 0)
+    response.headers["X-Family-Height"] = str(family_status.get("family_output_height") or 0)
+    response.headers["X-Family-Jpeg-Bytes"] = str(len(image_bytes))
+    response.headers["X-Fallback-Reason"] = str(family_status.get("fallback_reason") or "FAMILY_CACHE_EMPTY")
+    return response
 
 
 @router.get("/stream.mjpg")
@@ -243,14 +283,18 @@ async def camera_stream() -> StreamingResponse:
 
 
 @router.get("/family-stream.mjpg")
-async def camera_family_stream() -> StreamingResponse:
+async def camera_family_stream(quality: str = "balanced") -> StreamingResponse:
+    family_service = get_family_camera_stream_service()
+    normalized_quality = await family_service.activate_quality(quality)
     return StreamingResponse(
-        get_camera_frame_hub().mjpeg_frames(),
+        family_service.mjpeg_frames(normalized_quality),
         media_type="multipart/x-mixed-replace; boundary=frame",
         headers={
             "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
             "Pragma": "no-cache",
+            "X-Accel-Buffering": "no",
             "X-Camera-Stream": "family-stream",
+            "X-Family-Quality": normalized_quality,
         },
     )
 
@@ -317,6 +361,7 @@ async def camera_setup_current() -> dict[str, object]:
 @router.post("/setup")
 async def camera_setup_update(payload: CameraSetupConfigRequest) -> dict[str, object]:
     updated = get_camera_setup_config_service().update(payload.model_dump(exclude_none=True))
+    await get_family_camera_stream_service().reload_after_settings_update()
     return {"ok": True, "config": updated}
 
 

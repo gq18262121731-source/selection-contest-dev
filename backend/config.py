@@ -253,7 +253,7 @@ class Settings(BaseSettings):
     fall_detection_edge_margin_ratio: float = 0.015
     fall_detection_edge_partial_min_height_ratio: float = 0.22
     fall_detection_track_state_ttl_seconds: float = 120.0
-    fall_detection_incident_reopen_seconds: float = 20.0
+    fall_detection_incident_reopen_seconds: float = 10.0
     fall_detection_multimodal_enabled: bool = True
     fall_detection_multimodal_provider: Literal["auto", "qwen_omni", "siliconflow_script", "disabled"] = "auto"
     fall_detection_multimodal_min_score: float = 0.45

@@ -3,6 +3,7 @@ import { computed, toRef, ref } from "vue";
 import { AlertTriangle } from "lucide-vue-next";
 
 import type { SessionUser } from "../api/client";
+import CommunityHandoverReport from "../components/CommunityHandoverReport.vue";
 import CommunityDeviceInspector from "../components/CommunityDeviceInspector.vue";
 import CommunityDeviceRail from "../components/CommunityDeviceRail.vue";
 import CommunityRealtimeVitalsPanel from "../components/CommunityRealtimeVitalsPanel.vue";
@@ -145,7 +146,7 @@ const pageMeta = computed(() => [
           <div 
             class="modern-alarm-badge"
             :class="{ 
-              'modern-alarm-badge--active': workspace.metrics.value?.unacknowledged_alarm_count > 0,
+              'modern-alarm-badge--active': (workspace.metrics.value?.unacknowledged_alarm_count ?? 0) > 0,
               'modern-alarm-badge--clickable': canAccessDebug 
             }"
             @click="canAccessDebug ? triggerSOSSimulation() : null"
@@ -212,6 +213,13 @@ const pageMeta = computed(() => [
           </div>
         </article>
       </div>
+
+      <CommunityHandoverReport
+        :community-name="workspace.community.value?.name ?? '当前社区'"
+        :device-macs="workspace.deviceStatuses.value.map((item) => item.device_mac)"
+        :device-statuses="workspace.deviceStatuses.value"
+        :recent-alerts="workspace.recentAlerts.value"
+      />
     </div>
   </section>
 </template>

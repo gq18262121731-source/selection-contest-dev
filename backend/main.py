@@ -37,6 +37,7 @@ from backend.dependencies import (
     get_camera_audio_hub,
     get_camera_frame_hub,
     get_camera_processed_frame_hub,
+    get_family_camera_stream_service,
     get_video_bridge_service,
     get_data_generator,
     get_demo_data_status,
@@ -88,6 +89,7 @@ async def lifespan(app: FastAPI):
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     # 启动即保证虚拟设备至少有 24h 可分析历史
     ensure_demo_overlay_history_window(hours=24, step_minutes=10)
+    await get_family_camera_stream_service().warm_default_profile()
     tasks: list[asyncio.Task] = []
     if settings.mock_runtime_enabled:
         tasks.append(asyncio.create_task(_mock_stream_loop()))
