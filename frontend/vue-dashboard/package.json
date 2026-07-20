@@ -7,6 +7,9 @@
     "dev": "vite",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint src --ext .ts,.vue",
+    "lint:robot-follow": "eslint src/views/RobotFollowPage.vue src/composables/useGo2VideoBridge.ts src/composables/go2VideoBridgePolicy.ts src/types/go2VideoBridge.ts src/config/go2VideoBridge.ts",
+    "test:robot-follow": "node scripts/test-go2-video-policy.cjs",
+    "validate:robot-follow": "npm run test:robot-follow && npm run lint:robot-follow && npm run build",
     "check": "npm run typecheck && npm run lint && npm run build",
     "build": "vite build",
     "preview": "vite preview"
