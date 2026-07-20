@@ -14,7 +14,7 @@ release: go2-phase1-v0.1.0-rc.1
 community_repository:
   url: https://github.com/gq18262121731-source/selection-contest-dev
   branch: codex/go2-robot-follow-phase1
-  source_commit: 89fbf5f324641ef1a3f0cf501ba321161bcfa5af
+  source_commit: f8d6323696c3c6b006f1c05950c95b329d9a76f1
 
 video_bridge_source:
   repository_status: unversioned-local-source
