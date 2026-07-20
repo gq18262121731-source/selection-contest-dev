@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import {
   Activity,
+  Bot,
   Cpu,
   Network,
   SquareTerminal,
@@ -45,6 +46,12 @@ const navItems = computed<NavItem[]>(() =>
       label: "成员设备",
       description: "注册、绑定与台账",
       icon: UsersRound,
+    },
+    {
+      page: "robot-follow" as PageKey,
+      label: "机器狗跟随",
+      description: "第一视角与随行协同",
+      icon: Bot,
     },
     {
       page: "agent" as PageKey,

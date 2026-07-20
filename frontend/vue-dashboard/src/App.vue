@@ -11,6 +11,7 @@ import DebugPage from "./views/DebugPage.vue";
 import FamilyPage from "./views/FamilyPage.vue";
 import LoginPage from "./views/LoginPage.vue";
 import MemberDevicePage from "./views/MemberDevicePage.vue";
+import RobotFollowPage from "./views/RobotFollowPage.vue";
 
 const {
   authError,
@@ -139,6 +140,8 @@ onUnmounted(() => {
       v-else-if="activePage === 'members'"
       :session-user="sessionUser"
     />
+
+    <RobotFollowPage v-else-if="activePage === 'robot-follow'" />
 
     <AccessDeniedPage v-else />
   </AppShell>
