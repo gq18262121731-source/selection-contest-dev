@@ -1,0 +1,10 @@
+{
+  "weights": "D:\\Program\\model\\fall_detection\\runs\\yolo_fall_detector_v2_recall_probe\\weights\\best.pt",
+  "data": "D:\\Program\\model\\fall_detection\\configs\\fall_detect_v2_recall_dataset.yaml",
+  "split": "val",
+  "precision": 0.4798732753470089,
+  "recall": 0.6838569470762319,
+  "map50": 0.531558832159498,
+  "map50_95": 0.4224477716235083,
+  "results_dir": "D:\\Program\\model\\fall_detection\\runs\\yolo_fall_detector_v2_recall_probe_val_eval"
+}

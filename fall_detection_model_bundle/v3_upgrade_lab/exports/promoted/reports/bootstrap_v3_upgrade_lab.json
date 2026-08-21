@@ -1,0 +1,169 @@
+{
+  "generated_at": "2026-05-18T06:16:17.986516+00:00",
+  "lab": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab",
+  "download_requested": true,
+  "dry_run": false,
+  "ultralytics": [
+    {
+      "model": "yolo26n-pose.pt",
+      "status": "exists",
+      "path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\weights\\yolo26\\yolo26n-pose.pt"
+    },
+    {
+      "model": "yolo26s-pose.pt",
+      "status": "exists",
+      "path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\weights\\yolo26\\yolo26s-pose.pt"
+    },
+    {
+      "model": "yolo26n.pt",
+      "status": "exists",
+      "path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\weights\\yolo26\\yolo26n.pt"
+    },
+    {
+      "model": "yolo26s.pt",
+      "status": "exists",
+      "path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\weights\\yolo26\\yolo26s.pt"
+    },
+    {
+      "model": "yolo26n-seg.pt",
+      "status": "exists",
+      "path": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\weights\\yolo26\\yolo26n-seg.pt"
+    }
+  ],
+  "packages": [
+    {
+      "package": "fiftyone",
+      "module": "fiftyone",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'fiftyone'"
+    },
+    {
+      "package": "albumentations",
+      "module": "albumentations",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'albumentations'"
+    },
+    {
+      "package": "label-studio",
+      "module": "label_studio",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'label_studio'"
+    },
+    {
+      "package": "onnx",
+      "module": "onnx",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'onnx'"
+    },
+    {
+      "package": "onnxruntime",
+      "module": "onnxruntime",
+      "status": "installed",
+      "detail": "1.24.3"
+    },
+    {
+      "package": "onnxruntime-gpu",
+      "module": "onnxruntime",
+      "status": "installed",
+      "detail": "1.24.3"
+    },
+    {
+      "package": "mmpose",
+      "module": "mmpose",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'mmpose'"
+    },
+    {
+      "package": "mmdet",
+      "module": "mmdet",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'mmdet'"
+    },
+    {
+      "package": "mmengine",
+      "module": "mmengine",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'mmengine'"
+    },
+    {
+      "package": "mmcv",
+      "module": "mmcv",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'mmcv'"
+    },
+    {
+      "package": "mmaction2",
+      "module": "mmaction",
+      "status": "missing",
+      "detail": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'mmaction'"
+    }
+  ],
+  "tool_wheels": [
+    {
+      "package": "fiftyone",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting fiftyone\n  Downloading fiftyone-1.15.0-py3-none-any.whl.metadata (23 kB)\nDownloading fiftyone-1.15.0-py3-none-any.whl (17.7 MB)\n   ---------------------------------------- 17.7/17.7 MB 10.4 MB/s  0:00:01\nSaved .\\tools\\wheels\\fiftyone-1.15.0-py3-none-any.whl\nSuccessfully downloaded fiftyone"
+    },
+    {
+      "package": "albumentations",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting albumentations\n  Downloading albumentations-2.0.8-py3-none-any.whl.metadata (43 kB)\nDownloading albumentations-2.0.8-py3-none-any.whl (369 kB)\nSaved .\\tools\\wheels\\albumentations-2.0.8-py3-none-any.whl\nSuccessfully downloaded albumentations"
+    },
+    {
+      "package": "label-studio",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting label-studio\n  Downloading label_studio-1.23.0-py3-none-any.whl.metadata (14 kB)\nDownloading label_studio-1.23.0-py3-none-any.whl (73.9 MB)\n   ---------------------------------------- 73.9/73.9 MB 11.3 MB/s  0:00:06\nSaved .\\tools\\wheels\\label_studio-1.23.0-py3-none-any.whl\nSuccessfully downloaded label-studio"
+    },
+    {
+      "package": "onnx",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting onnx\n  Downloading onnx-1.21.0-cp311-cp311-win_amd64.whl.metadata (8.7 kB)\nDownloading onnx-1.21.0-cp311-cp311-win_amd64.whl (16.4 MB)\n   ---------------------------------------- 16.4/16.4 MB 10.9 MB/s  0:00:01\nSaved .\\tools\\wheels\\onnx-1.21.0-cp311-cp311-win_amd64.whl\nSuccessfully downloaded onnx"
+    },
+    {
+      "package": "onnxruntime",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting onnxruntime\n  Downloading onnxruntime-1.26.0-cp311-cp311-win_amd64.whl.metadata (5.5 kB)\nDownloading onnxruntime-1.26.0-cp311-cp311-win_amd64.whl (13.0 MB)\n   ---------------------------------------- 13.0/13.0 MB 10.1 MB/s  0:00:01\nSaved .\\tools\\wheels\\onnxruntime-1.26.0-cp311-cp311-win_amd64.whl\nSuccessfully downloaded onnxruntime"
+    },
+    {
+      "package": "onnxruntime-gpu",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting onnxruntime-gpu\n  Downloading onnxruntime_gpu-1.26.0-cp311-cp311-win_amd64.whl.metadata (5.6 kB)\nDownloading onnxruntime_gpu-1.26.0-cp311-cp311-win_amd64.whl (226.5 MB)\n   ---------------------------------------- 226.5/226.5 MB 11.0 MB/s  0:00:20\nSaved .\\tools\\wheels\\onnxruntime_gpu-1.26.0-cp311-cp311-win_amd64.whl\nSuccessfully downloaded onnxruntime-gpu"
+    },
+    {
+      "package": "mmpose",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting mmpose\n  Downloading mmpose-1.3.2-py2.py3-none-any.whl.metadata (29 kB)\nDownloading mmpose-1.3.2-py2.py3-none-any.whl (1.7 MB)\n   ---------------------------------------- 1.7/1.7 MB 2.5 MB/s  0:00:00\nSaved .\\tools\\wheels\\mmpose-1.3.2-py2.py3-none-any.whl\nSuccessfully downloaded mmpose"
+    },
+    {
+      "package": "mmdet",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting mmdet\n  Downloading mmdet-3.3.0-py3-none-any.whl.metadata (29 kB)\nDownloading mmdet-3.3.0-py3-none-any.whl (2.2 MB)\n   ---------------------------------------- 2.2/2.2 MB 8.4 MB/s  0:00:00\nSaved .\\tools\\wheels\\mmdet-3.3.0-py3-none-any.whl\nSuccessfully downloaded mmdet"
+    },
+    {
+      "package": "mmengine",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting mmengine\n  Downloading mmengine-0.10.7-py3-none-any.whl.metadata (20 kB)\nDownloading mmengine-0.10.7-py3-none-any.whl (452 kB)\nSaved .\\tools\\wheels\\mmengine-0.10.7-py3-none-any.whl\nSuccessfully downloaded mmengine"
+    },
+    {
+      "package": "mmcv",
+      "status": "failed",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting mmcv\n  Downloading mmcv-2.2.0.tar.gz (479 kB)\n  Installing build dependencies: started\n  Installing build dependencies: finished with status 'done'\n  Getting requirements to build wheel: started\n  Getting requirements to build wheel: finished with status 'error'\nerror: subprocess-exited-with-error\n  \n  × Getting requirements to build wheel did not run successfully.\n  │ exit code: 1\n  ╰─> [20 lines of output]\n      Traceback (most recent call last):\n        File \"C:\\Users\\YANG\\.conda\\envs\\helth\\Lib\\site-packages\\pip\\_vendor\\pyproject_hooks\\_in_process\\_in_process.py\", line 389, in <module>\n          main()\n        File \"C:\\Users\\YANG\\.conda\\envs\\helth\\Lib\\site-packages\\pip\\_vendor\\pyproject_hooks\\_in_process\\_in_process.py\", line 373, in main\n          json_out[\"return_val\"] = hook(**hook_input[\"kwargs\"])\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        File \"C:\\Users\\YANG\\.conda\\envs\\helth\\Lib\\site-packages\\pip\\_vendor\\pyproject_hooks\\_in_process\\_in_process.py\", line 143, in get_requires_for_build_wheel\n          return hook(config_settings)\n                 ^^^^^^^^^^^^^^^^^^^^^\n        File \"C:\\Users\\YANG\\AppData\\Local\\Temp\\pip-build-env-ephrlj70\\overlay\\Lib\\site-packages\\setuptools\\build_meta.py\", line 333, in get_requires_for_build_wheel\n          return self._get_build_requires(config_settings, requirements=[])\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        File \"C:\\Users\\YANG\\AppData\\Local\\Temp\\pip-build-env-ephrlj70\\overlay\\Lib\\site-packages\\setuptools\\build_meta.py\", line 301, in _get_build_requires\n          self.run_setup()\n        File \"C:\\Users\\YANG\\AppData\\Local\\Temp\\pip-build-env-ephrlj70\\overlay\\Lib\\site-packages\\setuptools\\build_meta.py\", line 520, in run_setup\n          super().run_setup(setup_script=setup_script)\n        File \"C:\\Users\\YANG\\AppData\\Local\\Temp\\pip-build-env-ephrlj70\\overlay\\Lib\\site-packages\\setuptools\\build_meta.py\", line 317, in run_setup\n          exec(code, locals())\n        File \"<string>\", line 5, in <module>\n      ModuleNotFoundError: No module named 'pkg_resources'\n      [end of output]\n  \n  note: This error originates from a subprocess, and is likely not a problem with pip.\nERROR: Failed to build 'mmcv' when getting requirements to build wheel"
+    },
+    {
+      "package": "mmaction2",
+      "status": "downloaded",
+      "target_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\tools\\wheels",
+      "detail": "Collecting mmaction2\n  Downloading mmaction2-1.2.0-py2.py3-none-any.whl.metadata (29 kB)\nDownloading mmaction2-1.2.0-py2.py3-none-any.whl (882 kB)\n   ---------------------------------------- 882.2/882.2 kB 7.9 MB/s  0:00:00\nSaved .\\tools\\wheels\\mmaction2-1.2.0-py2.py3-none-any.whl\nSuccessfully downloaded mmaction2"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "data_path": "D:\\Program\\health(5-12)\\data\\raw\\patients_data_with_alerts.xlsx",
+  "sheet_name": "",
+  "batch_size": 16,
+  "epochs": 40,
+  "learning_rate": 0.001,
+  "val_ratio": 0.2,
+  "random_seed": 42
+}

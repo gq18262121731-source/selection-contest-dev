@@ -1,0 +1,48 @@
+datasets:
+  omnifall_labels:
+    kind: huggingface
+    repo_id: simplexsigil2/omnifall
+    repo_type: dataset
+    allow_patterns:
+      - labels/*.csv
+      - LABELS.md
+      - README.md
+    target_dir: data_public/omnifall_labels
+    source_url: https://huggingface.co/datasets/simplexsigil2/omnifall
+    license_note: Refer to original datasets for raw-data license terms.
+  wanfall_splits:
+    kind: huggingface
+    repo_id: simplexsigil2/wanfall
+    repo_type: dataset
+    allow_patterns:
+      - splits/**/*.csv
+      - labels/*.csv
+      - README.md
+    target_dir: data_public/wanfall_splits
+    source_url: https://huggingface.co/datasets/simplexsigil2/wanfall
+    license_note: Refer to original datasets for raw-data license terms.
+  urfd:
+    kind: urfd
+    target_dir: data_public/urfd
+    source_url: https://fenix.ur.edu.pl/~mkepski/ds/uf.html
+    license_note: Official page should be re-checked before production use.
+  gmdcsa24:
+    kind: direct_file
+    url: https://zenodo.org/api/records/11216408/files/ekramalam/GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-1.1.0.zip/content
+    filename: GMDCSA24.zip
+    target_dir: data_public/gmdcsa24
+    source_url: https://zenodo.org/records/11216408
+    license_note: Check the Zenodo record terms before production use.
+  fallpose:
+    kind: fallpose
+    target_dir: data_public/fallpose
+    source_url: https://falldataset.com/
+    license_note: No explicit production license found on the landing page; treat as research-only until clarified.
+  fall_database:
+    kind: direct_file
+    url: https://zenodo.org/api/records/3886586/files/FallDatabase.rar/content
+    filename: FallDatabase.rar
+    target_dir: data_public/fall_database
+    extract_mode: skeleton_only
+    source_url: https://zenodo.org/records/3886586
+    license_note: Skeleton sequences can be extracted locally with Windows tar.

@@ -1,0 +1,8 @@
+thresholds:
+  standing_max_aspect: 0.95
+  standing_max_torso_angle: 0.35
+  sitting_min_hip_knee_delta: 0.04
+  bending_min_torso_angle: 0.35
+  bending_max_aspect: 1.25
+  lying_min_aspect: 1.15
+  floor_overlap_min: 0.20

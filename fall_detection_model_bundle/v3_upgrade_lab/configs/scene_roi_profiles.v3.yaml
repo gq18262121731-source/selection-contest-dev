@@ -1,0 +1,29 @@
+profiles:
+  bedroom:
+    floor_region: []
+    bed_region: []
+    sofa_region: []
+    ignore_region: []
+    notes: "Fill normalized polygons per deployment camera after calibration."
+  living_room:
+    floor_region: []
+    bed_region: []
+    sofa_region: []
+    ignore_region: []
+  corridor:
+    floor_region: []
+    wall_support_region: []
+    ignore_region: []
+  doorway:
+    floor_region: []
+    blind_spot_region: []
+    ignore_region: []
+  demo:
+    floor_region: []
+    ignore_region: []
+
+rules:
+  lying_on_bed_default_state: normal
+  lying_on_floor_default_state: suspected_fall
+  fallen_on_floor_with_immobility_state: confirmed_fall
+  bathroom_floor_fall_severity_boost: true

@@ -1,0 +1,33 @@
+severity:
+  l1_recovered_down_seconds: 6.0
+  l2_recovered_down_seconds: 18.0
+  l3_down_seconds: 18.0
+  l4_down_seconds: 45.0
+  l4_immobile_seconds: 30.0
+
+state_machine:
+  suspect_ratio: 0.82
+  suspect_floor: 0.42
+  postfall_confirm_ratio: 0.78
+  postfall_confirm_floor: 0.48
+  persistence_confirm_score_floor: 0.35
+  downed_persistence_seconds: 0.65
+  suspected_timeout_seconds: 3.5
+  confirmed_to_monitor_seconds: 1.2
+  recovery_confirm_seconds: 3.5
+  recovery_fail_seconds: 1.1
+  recovered_reset_seconds: 5.0
+  red_latch_seconds: 12.0
+
+observations:
+  posture_downed: 0.58
+  posture_strong_downed: 0.68
+  posture_upright: 0.25
+  box_aspect_downed: 1.16
+  box_aspect_strong_downed: 1.32
+  box_aspect_upright: 0.82
+  pose_angle_downed: 0.28
+  pose_angle_upright: 0.16
+  motion_low: 0.028
+  posture_delta_rapid: 0.21
+  score_range_rapid: 0.25

@@ -1,0 +1,60 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+pytest-cache-files-*
+
+# Node / frontend builds
+node_modules/
+frontend/vue-dashboard/node_modules/
+dist/
+build/
+frontend/vue-dashboard/dist/
+
+# Logs and runtime output
+*.log
+logs/
+runtime_logs/
+camera_runtime_external/runtime_logs/
+output/
+
+# IDE / local tools
+.idea/
+.vscode/
+.cursor/
+.agents/
+.playwright-cli/
+.impeccable.md
+
+# Data, caches, and temporary test output
+data/
+datasets/
+runs/
+weights/
+tmp_knowledge_test/
+omni_test/
+.omni_test/
+backend/tmp_x.txt
+*.tmp
+*.bak
+
+# Model weights and generated artifacts
+artifacts/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.zip
+*.rar
+*.7z
+
+# System files
+.DS_Store
+Thumbs.db

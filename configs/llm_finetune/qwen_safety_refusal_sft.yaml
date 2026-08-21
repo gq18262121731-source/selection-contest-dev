@@ -1,0 +1,25 @@
+### Medical safety boundary SFT.
+model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+dataset_dir: data
+dataset: health_monitoring_single,health_public_single
+template: qwen
+cutoff_len: 2048
+overwrite_cache: true
+preprocessing_num_workers: 4
+output_dir: saves/family-chat-lora/safety-refusal
+logging_steps: 10
+save_steps: 150
+plot_loss: true
+overwrite_output_dir: false
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 2.0e-4
+num_train_epochs: 1.5
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+bf16: false
+fp16: true

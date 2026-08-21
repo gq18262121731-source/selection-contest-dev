@@ -1,0 +1,77 @@
+scale:
+  id: fall_injury_triage_i0_i5
+  version: 2026-05-20
+  purpose: "Fall injury-risk triage for realtime camera events"
+  basis:
+    - "NDNQI/AHRQ-style fall injury outcome categories: none, minor, moderate, major, death"
+    - "CMS long-term care quality-measure concept of falls with major injury, including fracture/dislocation/head injury"
+  disclaimer: "This system estimates urgency from video and event evidence. It is not a medical diagnosis and cannot confirm death without human/external confirmation."
+
+levels:
+  I0:
+    label_zh: "无跌倒或无可见伤害"
+    label_en: "No fall or no apparent injury"
+    standard_mapping: "none/no apparent injury"
+    alarm_priority: "NONE"
+    definition: "No active fall event, or the event is resolved with no visible injury evidence."
+    response: "No fall alarm. Keep ordinary monitoring."
+  I1:
+    label_zh: "疑似跌倒或近失事件，待观察"
+    label_en: "Suspected fall / near-fall observation"
+    standard_mapping: "system pre-injury triage level"
+    alarm_priority: "NOTICE"
+    definition: "The model has suspicious evidence, but the event is not confirmed as a fall and there is no injury evidence."
+    response: "Check the live view and wait for secondary confirmation."
+  I2:
+    label_zh: "轻度损伤风险"
+    label_en: "Minor injury risk"
+    standard_mapping: "minor injury"
+    alarm_priority: "WARNING"
+    definition: "Confirmed fall with quick recovery or low-risk post-fall behavior; possible minor bruising, soreness, scrape, or simple first-aid need."
+    response: "Contact caregiver/family, confirm consciousness and whether the elder can safely get up."
+  I3:
+    label_zh: "中度损伤风险"
+    label_en: "Moderate injury risk"
+    standard_mapping: "moderate injury"
+    alarm_priority: "CRITICAL"
+    definition: "Confirmed fall with delayed/abnormal recovery, unstable gait, limping, persistent pain signs, or need for prompt clinical/caregiver assessment."
+    response: "Send on-site help promptly and continue post-fall monitoring."
+  I4:
+    label_zh: "重度损伤或急救评估风险"
+    label_en: "Major injury or emergency-assessment risk"
+    standard_mapping: "major injury"
+    alarm_priority: "CRITICAL"
+    definition: "Long down time, unable to rise, needs assistance, suspected fracture/dislocation/head-neck injury, abnormal consciousness, heavy bleeding, chest pain, or abnormal breathing."
+    response: "Immediate on-site intervention. Do not move the person casually; consider emergency care."
+  I5:
+    label_zh: "生命危急或死亡"
+    label_en: "Life-threatening or death"
+    standard_mapping: "death/life-threatening outcome"
+    alarm_priority: "SOS"
+    definition: "Unresponsive or life-threatening signs, or externally/human-confirmed death. Vision alone must not confirm death."
+    response: "Call emergency services and notify responsible contacts immediately."
+
+mapping_rules:
+  default_from_state:
+    no_event: I0
+    suspected_fall: I1
+    possible_fall: I1
+    confirmed_fall: I2
+    post_fall_monitoring: I2
+    injury_watch: I3
+    abnormal_recovery: I3
+    needs_assistance: I4
+    emergency: I4
+  escalation_evidence:
+    I3:
+      - "recovery_delay_seconds >= delayed_recovery_seconds"
+      - "injury_score >= abnormal_score_i3"
+      - "limp/asymmetry or unstable gait after fall"
+    I4:
+      - "down_seconds >= difficult_recovery_seconds"
+      - "injury_score >= abnormal_score_i4"
+      - "needs_assistance or unable_to_rise"
+      - "suspected major injury signs"
+    I5:
+      - "external/human confirmation of death"
+      - "unresponsive or life-threatening signs from trusted external input"

@@ -1,0 +1,47 @@
+provider_priority:
+  - qwen3_vl
+  - qwen_omni
+  - internvl
+  - glm_vision
+
+call_policy:
+  call_when_states:
+    - suspected_fall
+    - confirmed_fall
+    - post_fall_monitoring
+  call_when_branch_disagreement: true
+  min_score: 0.42
+  max_clip_seconds: 4
+  timeout_seconds: 45
+  emergency_passthrough: true
+
+json_schema:
+  judgement:
+    enum:
+      - fall
+      - possible_fall
+      - no_fall
+      - uncertain
+  confidence:
+    enum:
+      - low
+      - medium
+      - high
+  required_fields:
+    - judgement
+    - confidence
+    - person_count
+    - target_person_status
+    - evidence
+    - recommended_action
+    - report_zh
+
+prompt:
+  system: "你是养老看护场景中的跌倒事件复核助手，只输出严格 JSON。"
+  user_template: |
+    请复核这段画面是否存在目标老人跌倒。重点区分：
+    1. 真实跌倒后倒地或无法起身；
+    2. 主动坐下、躺下、睡觉、弯腰、捡东西、运动；
+    3. 多人同屏时目标老人是否才是跌倒对象。
+    检测模型初判：{model_event_json}
+    请输出 judgement/confidence/person_count/target_person_status/evidence/recommended_action/report_zh。

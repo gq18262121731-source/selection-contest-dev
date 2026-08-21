@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "default_policy": "shadow_before_canary",
+  "routes": [
+    {
+      "task": "health_report",
+      "base_model": "Qwen3.5-9B-Base",
+      "adapter": "health-report-lora-existing",
+      "adapter_path": "D:/Program/LLaMA-Factory/saves/Qwen3.5-9B-Base/lora/train_2026-05-07-11-01-32",
+      "status": "existing_candidate",
+      "fallback": "base_model",
+      "min_eval_score": 0.95,
+      "feature_flag": "LLM_ADAPTER_HEALTH_REPORT",
+      "notes": "Existing local LoRA artifact discovered under LLaMA-Factory saves; keep in shadow/candidate routing until domain eval gates pass."
+    },
+    {
+      "task": "fall_alert",
+      "base_model": "Qwen3.5-9B-Base",
+      "adapter": "fall-alert-lora-existing",
+      "adapter_path": "D:/Program/LLaMA-Factory/saves/Qwen3.5-9B-Base/lora/train_2026-05-06-16-55-17",
+      "status": "existing_candidate",
+      "fallback": "base_model",
+      "min_eval_score": 0.98,
+      "feature_flag": "LLM_ADAPTER_FALL_ALERT",
+      "notes": "Existing local LoRA artifact mapped for fall-alert routing; production enablement still requires fall alert eval and canary approval."
+    },
+    {
+      "task": "family_chat",
+      "base_model": "Qwen3.5-9B-Base",
+      "adapter": "family-chat-lora-existing",
+      "adapter_path": "D:/Program/LLaMA-Factory/saves/Qwen3.5-9B-Base/lora/train_2026-04-30-19-21-03",
+      "status": "existing_candidate",
+      "fallback": "base_model",
+      "min_eval_score": 0.96,
+      "feature_flag": "LLM_ADAPTER_FAMILY_CHAT",
+      "notes": "Existing local LoRA artifact mapped for family-chat safety shadow testing."
+    },
+    {
+      "task": "community_agent",
+      "base_model": "Qwen3.5-9B-Base",
+      "adapter": "community-agent-lora-existing",
+      "adapter_path": "D:/Program/LLaMA-Factory/saves/Qwen3.5-9B-Base/lora/train_2026-04-29-14-39-24",
+      "status": "existing_candidate",
+      "fallback": "base_model",
+      "min_eval_score": 0.94,
+      "feature_flag": "LLM_ADAPTER_COMMUNITY_AGENT",
+      "notes": "Existing local LoRA artifact mapped for community agent/tool-call shadow testing."
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+default_profile: fall_v3_final_promoted_blocked
+models:
+  pose:
+    type: pose
+    framework: ultralytics
+    path: v3_upgrade_lab/weights/yolo26/yolo26n-pose.pt
+    fallback_path: yolo11n-pose.pt
+    imgsz: 640
+    conf: 0.18
+    max_det: 10
+  gru_temporal:
+    type: temporal
+    framework: pytorch
+    path: weights/gru_pose_fall_v2_w16.pt
+    fallback_path: weights/gru_pose_fall_v1.pt
+  hybrid_temporal:
+    type: temporal
+    framework: pytorch
+    path: weights/hybrid_tcn_transformer_private_real_v1.pt
+    fallback_path: weights/hybrid_tcn_transformer_v2_matchgru.pt
+  semantic_temporal:
+    type: temporal
+    framework: pytorch
+    path: weights/semantic_mix_falldb_private_real_v1.pt
+    fallback_path: weights/semantic_mix_falldb_v1.pt
+  posture_risk:
+    type: classify
+    framework: ultralytics
+    path: runs/yolo_posture_person_binary_cls_v1/weights/best.pt
+    imgsz: 384
+  fall_detector:
+    type: detect
+    framework: ultralytics
+    path: v3_upgrade_lab/weights/yolo26/yolo26_fall_detector_v3_best.pt
+    fallback_path: weights/yolo_fall_detector_v1.pt
+    enabled: true
+    imgsz: 640
+    conf: 0.18
+    iou: 0.45
+    fall_labels:
+    - fall
+    - fallen
+profiles:
+  fall_v3_shadow_yolo26_pose:
+    description: 'Shadow profile: YOLO26 pose front-end with current temporal ensemble.
+      Does not become production without replay gates.'
+    threshold: 0.58
+    alert_hold: 3
+    weights:
+      gru: 0.15
+      hybrid: 0.45
+      semantic: 0.0
+      posture: 0.25
+      detector: 0.15
+  fall_v3_recall_probe:
+    description: High-recall probe for finding false negatives; use replay only, not
+      production.
+    threshold: 0.42
+    alert_hold: 2
+    weights:
+      gru: 0.12
+      hybrid: 0.34
+      semantic: 0.0
+      posture: 0.26
+      detector: 0.28
+  fall_v3_hard_negative_guard:
+    description: Conservative profile for sleep, lying, bending, sitting, and occlusion
+      negatives.
+    threshold: 0.68
+    alert_hold: 4
+    weights:
+      gru: 0.18
+      hybrid: 0.46
+      semantic: 0.0
+      posture: 0.22
+      detector: 0.14
+  fall_v3_final_promoted_blocked:
+    description: Blocked V3 candidate. Exported for review only; do not use for production
+      replacement.
+    threshold: 0.42
+    alert_hold: 3
+    weights:
+      gru: 0.12
+      hybrid: 0.55
+      semantic: 0.0
+      posture: 0.35
+      detector: 0.1
+    promotion_gate_passed: false

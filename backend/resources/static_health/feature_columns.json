@@ -1,0 +1,20 @@
+[
+  "heart_rate",
+  "spo2",
+  "sbp",
+  "dbp",
+  "body_temp",
+  "fall_detection",
+  "data_accuracy",
+  "pulse_pressure",
+  "map_pressure",
+  "hr_spo2_ratio",
+  "temp_hr_interaction",
+  "bp_level_score",
+  "low_spo2_flag",
+  "high_hr_flag",
+  "fever_flag",
+  "hypertension_flag",
+  "fall_flag",
+  "quality_weight"
+]

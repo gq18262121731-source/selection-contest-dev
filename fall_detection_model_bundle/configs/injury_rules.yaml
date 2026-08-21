@@ -1,0 +1,73 @@
+observation:
+  post_fall_observe_seconds: 180.0
+  min_recovery_watch_seconds: 20.0
+  short_recovery_seconds: 5.0
+  delayed_recovery_seconds: 15.0
+  difficult_recovery_seconds: 40.0
+  emergency_down_seconds: 90.0
+  emergency_immobile_seconds: 60.0
+
+mobility:
+  low_speed: 0.018
+  very_low_speed: 0.008
+  unstable_sway: 0.045
+  severe_sway: 0.075
+  limp_asymmetry: 0.35
+  severe_limp_asymmetry: 0.55
+  limp_min_motion: 0.006
+  abnormal_score_i2: 0.35
+  abnormal_score_i3: 0.55
+  abnormal_score_i4: 0.75
+
+levels:
+  I0: no_fall_or_no_injury
+  I1: suspected_or_near_fall_observation
+  I2: minor_injury_risk
+  I3: moderate_injury_risk
+  I4: major_injury_or_emergency_risk
+  I5: life_threatening_or_death
+
+level_basis:
+  standard_family: "NDNQI/AHRQ-style fall injury outcome categories"
+  clinical_note: "This is operational triage, not a medical diagnosis. Human review is required for actual injury confirmation."
+  mapping:
+    I0:
+      label_zh: "无跌倒或无可见伤害"
+      standard_mapping: "none/no apparent injury"
+      criteria:
+        - "无有效跌倒事件"
+        - "疑似事件已恢复为正常且没有异常恢复证据"
+    I1:
+      label_zh: "疑似跌倒或近失事件，待观察"
+      standard_mapping: "system-specific pre-injury/near-fall triage level"
+      criteria:
+        - "模型提示 suspected_fall / possible_fall，但尚未达到 confirmed_fall"
+        - "需要人工查看现场，但不能声明已经受伤"
+    I2:
+      label_zh: "轻度损伤风险"
+      standard_mapping: "minor injury"
+      criteria:
+        - "已确认跌倒，但可以自主恢复或短时观察后恢复"
+        - "可能仅需观察、安抚、简单清洁、冷敷或基础护理"
+        - "无持续不能起身、明显活动受限或生命危险证据"
+    I3:
+      label_zh: "中度损伤风险"
+      standard_mapping: "moderate injury"
+      criteria:
+        - "跌倒后恢复缓慢、步态异常、跛行、明显不稳或持续疼痛迹象"
+        - "建议尽快由护理人员/家属到场评估"
+        - "可能需要进一步检查或医疗咨询"
+    I4:
+      label_zh: "重度损伤或急救评估风险"
+      standard_mapping: "major injury"
+      criteria:
+        - "长时间倒地、无法自主起身、需要他人协助"
+        - "疑似骨折、脱位、头颈部损伤、意识异常、大量出血、胸痛或呼吸异常"
+        - "需要立即现场处置并考虑急救"
+    I5:
+      label_zh: "生命危急或死亡"
+      standard_mapping: "death/life-threatening outcome"
+      criteria:
+        - "无反应、呼吸异常或生命体征危急"
+        - "人工确认死亡或系统收到外部急救/人工死亡确认信号"
+        - "视觉模型不得单独判定死亡，只能触发生命危急告警"

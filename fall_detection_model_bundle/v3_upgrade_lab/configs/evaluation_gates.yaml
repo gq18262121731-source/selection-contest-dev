@@ -1,0 +1,14 @@
+promotion_gates:
+  confirmed_fall_recall_min_delta_vs_baseline: 0.0
+  confirmed_false_positive_max_on_hard_negatives: 0
+  average_confirmation_latency_seconds_max: 1.5
+  p95_confirmation_latency_seconds_max: 3.0
+  minimum_runtime_fps_ratio_vs_baseline: 0.9
+  target_user_misbinding_rate_max: 0.01
+
+reporting:
+  required_outputs:
+    - baseline_summary.json
+    - candidate_summary.json
+    - hard_negative_failures.json
+    - promotion_decision.md

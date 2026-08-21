@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-05-18T09:02:27.302179+00:00",
+  "items": 30,
+  "best": {
+    "threshold": 0.42,
+    "weights": {
+      "gru": 0.12,
+      "hybrid": 0.55,
+      "semantic": 0.0,
+      "posture": 0.35,
+      "detector": 0.1
+    },
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 15,
+    "tn": 15
+  },
+  "profile_output": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\configs\\fusion_weights.v3.best.yaml",
+  "source_registry_profiles": [
+    "fall_v3_shadow_yolo26_pose",
+    "fall_v3_recall_probe",
+    "fall_v3_hard_negative_guard"
+  ]
+}

@@ -1,0 +1,20 @@
+﻿{
+    "camera":  {
+                   "host":  "192.168.8.248",
+                   "username":  "admin",
+                   "password":  "",
+                   "rtsp_port":  554,
+                   "transport":  "tcp",
+                   "stream":  "av0_1"
+               },
+    "viewer":  {
+                   "listen_host":  "127.0.0.1",
+                   "listen_port":  8090,
+                   "jpeg_quality":  80,
+                   "frame_interval_seconds":  0.08,
+                   "log_dir":  "runtime_logs",
+                   "auth_enabled":  false,
+                   "auth_username":  "camera",
+                   "auth_password":  ""
+               }
+}

@@ -1,0 +1,26 @@
+### Qwen LoRA SFT baseline for fast local iteration.
+model_name_or_path: Qwen/Qwen2.5-1.5B-Instruct
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+dataset_dir: data
+dataset: health_monitoring_single,health_monitoring_multi,health_public_single,health_public_multi
+template: qwen
+cutoff_len: 2048
+max_samples: 2000
+overwrite_cache: true
+preprocessing_num_workers: 4
+output_dir: saves/health-report-lora/baseline
+logging_steps: 10
+save_steps: 200
+plot_loss: true
+overwrite_output_dir: false
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 2.0e-4
+num_train_epochs: 2.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+bf16: false
+fp16: true

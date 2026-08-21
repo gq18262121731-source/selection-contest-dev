@@ -1,0 +1,18 @@
+{
+  "hr_alert": {
+    "0": "Normal",
+    "1": "High"
+  },
+  "spo2_alert": {
+    "0": "Normal",
+    "1": "Low"
+  },
+  "bp_alert": {
+    "0": "Normal",
+    "1": "High"
+  },
+  "temp_alert": {
+    "0": "Normal",
+    "1": "Abnormal"
+  }
+}

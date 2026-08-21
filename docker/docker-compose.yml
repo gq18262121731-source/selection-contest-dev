@@ -1,0 +1,54 @@
+﻿version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: ai-health-iot-backend
+    env_file:
+      - ../.env.example
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - chromadb
+      - ollama
+
+  postgres:
+    image: timescale/timescaledb-ha:pg15
+    container_name: ai-health-iot-postgres
+    environment:
+      POSTGRES_DB: ai_health_iot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/home/postgres/pgdata/data
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+
+  redis:
+    image: redis:7
+    container_name: ai-health-iot-redis
+    ports:
+      - "6379:6379"
+
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    container_name: ai-health-iot-chromadb
+    ports:
+      - "8001:8000"
+
+  ollama:
+    image: ollama/ollama:0.12.9
+    container_name: ai-health-iot-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  postgres_data:
+  ollama_data:

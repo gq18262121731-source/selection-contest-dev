@@ -1,0 +1,47 @@
+pose_frontends:
+  - name: yolo11n_pose_baseline
+    model: ../../yolo11n-pose.pt
+    purpose: baseline
+  - name: yolo26n_pose_low_latency
+    model: weights/yolo26/yolo26n-pose.pt
+    purpose: low_latency
+  - name: yolo26s_pose_accuracy
+    model: weights/yolo26/yolo26s-pose.pt
+    purpose: accuracy
+  - name: rtmpose_openmmlab_upper_bound
+    model: weights/openmmlab/rtmpose
+    purpose: upper_bound
+
+detectors:
+  - name: yolo26s_fall_detector_v3_recall
+    base_model: weights/yolo26/yolo26s.pt
+    imgsz: 768
+    epochs: 180
+    focus: recall
+  - name: yolo26s_fall_detector_v3_hardneg
+    base_model: weights/yolo26/yolo26s.pt
+    imgsz: 768
+    epochs: 120
+    focus: hard_negative
+
+temporal_models:
+  - name: gru_v3_w16
+    window: 16
+    stride: 4
+  - name: tcn_transformer_v3_w24
+    window: 24
+    stride: 6
+  - name: tcn_transformer_v3_w32
+    window: 32
+    stride: 8
+  - name: stgcn_v3
+    framework: mmaction2
+  - name: posec3d_v3
+    framework: mmaction2
+
+fusion_profiles:
+  - fall_v3_low_latency
+  - fall_v3_balanced
+  - fall_v3_high_recall
+  - fall_v3_hard_negative_guard
+  - fall_v3_final_promoted

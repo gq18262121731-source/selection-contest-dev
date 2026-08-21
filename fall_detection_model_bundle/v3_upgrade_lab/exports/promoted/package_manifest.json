@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-05-18T12:26:33.369154+00:00",
+  "output_dir": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\exports\\promoted",
+  "profile_name": "fall_v3_final_promoted_blocked",
+  "promotion_gate_passed": false,
+  "copied": {
+    "pose.path": "copied",
+    "pose.fallback_path": "copied",
+    "gru_temporal.path": "copied",
+    "gru_temporal.fallback_path": "copied",
+    "hybrid_temporal.path": "copied",
+    "hybrid_temporal.fallback_path": "copied",
+    "semantic_temporal.path": "copied",
+    "semantic_temporal.fallback_path": "copied",
+    "posture_risk.path": "copied",
+    "fall_detector.path": "copied",
+    "fall_detector.fallback_path": "copied"
+  },
+  "registry": "D:\\Program\\health(5-12)\\fall_detection_model_bundle\\v3_upgrade_lab\\exports\\promoted\\configs\\model_registry.v3.promoted.yaml",
+  "note": "This package is blocked for production replacement. Keep production on private_scene_fusion_v2."
+}

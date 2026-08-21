@@ -1,0 +1,82 @@
+public_sources:
+  gmdcsa24_downloaded:
+    priority: 0
+    purpose: "Downloaded CC BY 4.0 external video dataset for fall/ADL temporal replay and hard-negative expansion."
+    local_raw_path: "fall_detection_model_bundle/v3_upgrade_lab/datasets/external_authorized/gmdcsa24/raw/GMDCSA24-A-Dataset-for-Human-Fall-Detection-in-Videos-v2.0.zip"
+    local_extracted_path: "fall_detection_model_bundle/v3_upgrade_lab/datasets/external_authorized/gmdcsa24/extracted"
+    prepared_manifest: "fall_detection_model_bundle/v3_upgrade_lab/manifests/prepared_external_videos.v3.csv"
+    license_action: "Allowed for training with attribution; preserve DOI and source metadata."
+  urfd_research_subset_downloaded:
+    priority: 0
+    purpose: "Downloaded research-only RGB/CSV subset for cross-dataset fall/ADL temporal experiments and non-production shadow training."
+    local_raw_path: "fall_detection_model_bundle/v3_upgrade_lab/datasets/external_research_only/urfd/raw"
+    downloaded_subset: "fall-01..05 cam0 RGB/CSV; adl-01..05 cam0 RGB/CSV"
+    license_action: "CC BY-NC-SA 4.0; do not use for commercial/production model training unless author permission is obtained."
+  fallvision_keypoints_downloaded:
+    priority: 0
+    purpose: "Downloaded CC0 keypoint CSV archives for pose/temporal fall validation without pulling the full ~49GB video set."
+    local_raw_path: "fall_detection_model_bundle/v3_upgrade_lab/datasets/external_authorized/fallvision_keypoints/raw"
+    downloaded_subset: "16 keypoints_csv RAR archives from Harvard Dataverse FallVision"
+    license_action: "CC0 1.0; allowed for training/research, keep DOI/source metadata for traceability."
+  gmdcsa24:
+    priority: 1
+    purpose: "Household falls plus ADL and hard negatives."
+    existing_downloader_key: gmdcsa24
+    license_action: "Review Zenodo record before production training."
+  urfd:
+    priority: 2
+    purpose: "Cross-dataset RGB/depth/accelerometer fall benchmark."
+    existing_downloader_key: urfd
+    license_action: "Review official page before production training."
+  fallpose:
+    priority: 3
+    purpose: "Pose-oriented fall data for skeleton temporal training."
+    existing_downloader_key: fallpose
+    license_action: "Treat as research-only until clarified."
+  up_fall:
+    priority: 4
+    purpose: "Future camera plus wearable fusion."
+    existing_downloader_key: null
+    license_action: "Manual acquisition and license review required."
+  le2i:
+    priority: 5
+    purpose: "Classic video fall benchmark and ADL negatives."
+    existing_downloader_key: null
+    license_action: "Manual acquisition and license review required."
+
+private_collection:
+  required_scenes:
+    - bedroom_low_light
+    - living_room_far_view
+    - corridor_multi_person
+    - caregiver_assist
+    - target_user_sitting_down
+    - target_user_sleeping
+    - target_user_picking_objects
+    - target_user_realistic_safe_fall_staged
+  consent_required: true
+  train_only_after_user_approval: true
+
+label_taxonomy:
+  positive:
+    - fall_transition
+    - fallen
+    - post_fall_immobile
+  hard_negative:
+    - sleep
+    - lying
+    - sit_down
+    - sitting
+    - bending
+    - kneeling
+    - picking_objects
+    - exercise
+    - occlusion
+    - caregiver_assist
+  metadata:
+    - target_user_id
+    - camera_id
+    - lighting
+    - occlusion_level
+    - distance_level
+    - multi_person

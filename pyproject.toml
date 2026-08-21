@@ -1,0 +1,11 @@
+[project]
+name = "ai-health-iot"
+version = "0.1.0"
+description = "AIoT smart elder-care health monitoring platform for the 2026 AI application competition."
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"

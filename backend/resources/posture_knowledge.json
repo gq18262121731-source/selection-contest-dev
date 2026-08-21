@@ -1,0 +1,96 @@
+{
+  "fall_fast": {
+    "level": "critical",
+    "title": "快速跌倒",
+    "possible_causes": ["地面湿滑", "突然失去平衡", "突发头晕或意识改变", "疑似心脑血管急症"],
+    "immediate_actions": [
+      "先确认现场安全，再检查意识、呼吸和明显外伤。",
+      "不要立刻强行扶起，先判断是否有头颈部受伤或剧烈疼痛。",
+      "若无反应、呼吸异常、胸痛或意识模糊，应立即呼叫急救。"
+    ],
+    "contraindications": [
+      "不要剧烈摇晃或拖拽老人。",
+      "疑似头颈部受伤时不要随意搬动颈部。"
+    ],
+    "call_emergency": true
+  },
+  "fall_slow": {
+    "level": "danger",
+    "title": "缓慢滑倒或倒地",
+    "possible_causes": ["体力衰竭", "低血糖", "体位性低血压", "下肢无力或平衡能力下降"],
+    "immediate_actions": [
+      "尽快确认老人是否清醒、能否正常交流。",
+      "观察是否有头部撞击、持续疼痛、呼吸困难或出汗。",
+      "协助其保持安全姿势，避免二次跌落，并通知看护人复核。"
+    ],
+    "contraindications": [
+      "未确认伤情前不要急于搀扶站起。",
+      "不要让老人马上继续行走。"
+    ],
+    "call_emergency": false
+  },
+  "collapse_or_slump": {
+    "level": "warning",
+    "title": "瘫坐或塌陷姿态",
+    "possible_causes": ["乏力", "血压异常", "眩晕", "短暂意识波动"],
+    "immediate_actions": [
+      "尽快与老人对话，确认是否头晕、胸闷、乏力或意识模糊。",
+      "协助保持稳定坐姿，清理周围障碍物。",
+      "必要时测量血压、血氧，并联系家属或医护人员。"
+    ],
+    "contraindications": [
+      "不要忽视持续塌陷坐姿伴随的意识改变。"
+    ],
+    "call_emergency": false
+  },
+  "abnormal_lean": {
+    "level": "attention",
+    "title": "异常倾斜",
+    "possible_causes": ["单侧无力", "眩晕", "步态不稳", "短暂失衡"],
+    "immediate_actions": [
+      "观察老人是否能自主恢复站立或坐姿平衡。",
+      "确认周围是否有可绊倒物或狭窄空间。",
+      "若伴随言语含糊、单侧无力或面部歪斜，应提高警惕并联系医护。"
+    ],
+    "contraindications": [
+      "不要把持续异常倾斜简单当作普通弯腰动作。"
+    ],
+    "call_emergency": false
+  },
+  "abnormal_stillness": {
+    "level": "attention",
+    "title": "异常静止",
+    "possible_causes": ["意识下降", "疼痛", "跌倒后不愿移动", "虚弱或无法起身"],
+    "immediate_actions": [
+      "观察老人是否仍有正常交流、眨眼或肢体微动。",
+      "确认其所处位置是否安全，尤其是否在地面或狭窄角落。",
+      "若静止时间继续增加，应安排人工复核。"
+    ],
+    "contraindications": [
+      "不要长时间放任目标在异常位置保持静止而不复核。"
+    ],
+    "call_emergency": false
+  },
+  "hand_to_chest_or_abdomen": {
+    "level": "warning",
+    "title": "疑似捂胸或抱腹异常",
+    "possible_causes": ["胸痛", "呼吸不适", "腹部疼痛", "突发不适"],
+    "immediate_actions": [
+      "尽快询问是否胸闷、胸痛、腹痛、恶心或呼吸困难。",
+      "协助老人停止活动并保持安全坐姿。",
+      "若伴随出汗、面色苍白、呼吸急促或持续胸痛，应及时联系医疗帮助。"
+    ],
+    "contraindications": [
+      "不要把持续捂胸、抱腹动作只当作整理衣物而忽视。"
+    ],
+    "call_emergency": false
+  },
+  "normal": {
+    "level": "normal",
+    "title": "状态正常",
+    "possible_causes": [],
+    "immediate_actions": ["继续实时观察。"],
+    "contraindications": [],
+    "call_emergency": false
+  }
+}

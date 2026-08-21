@@ -1,0 +1,12 @@
+path: D:/Program/model/fall_detection/data_processed/fall_detect
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: person
+  1: fall
+  2: fallen
+  3: sitting
+  4: lying
+  5: bending
