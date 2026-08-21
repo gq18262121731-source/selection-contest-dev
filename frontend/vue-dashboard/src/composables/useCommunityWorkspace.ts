@@ -46,6 +46,7 @@ type SerialSelectionGate = {
 };
 
 const DISPLAY_READY_SERIAL_PACKET_TYPES = new Set(["response_ab", "response_a", "response_a_only", "response_b", "broadcast", "legacy_response", "legacy_response_a", "legacy_response_b"]);
+const SERIAL_SAMPLE_FRESH_MS = 20_000;
 
 const serialSelectionGate = ref<SerialSelectionGate | null>(null);
 
@@ -76,7 +77,9 @@ const isAwaitingSelectedRealtime = computed(
       return false;
     }
     const gate = getSerialGate(mac);
-    return Boolean(gate && !gate.hasFreshSample);
+    const latest = focusLatest.value;
+    const hasFreshLatest = Boolean(latest && isFreshSerialSample(latest));
+    return Boolean((gate && !gate.hasFreshSample) || !hasFreshLatest);
   },
 );
 
@@ -102,6 +105,24 @@ function getSerialGate(mac: string): SerialSelectionGate | null {
 
 function sampleTimestampMs(sample: Pick<HealthSample, "timestamp">) {
   return new Date(sample.timestamp).getTime();
+}
+
+function isFreshSerialSample(sample: Pick<HealthSample, "timestamp"> | null | undefined) {
+  if (!sample) return false;
+  const timestampMs = sampleTimestampMs(sample);
+  if (!Number.isFinite(timestampMs)) return false;
+  return Date.now() - timestampMs <= SERIAL_SAMPLE_FRESH_MS;
+}
+
+function isFreshEnoughForDisplay(
+  sample: HealthSample | null | undefined,
+  ingestMode?: string | null,
+): sample is HealthSample {
+  if (!sample) return false;
+  if (ingestMode === "serial" || sample.source === "serial") {
+    return isFreshSerialSample(sample);
+  }
+  return true;
 }
 
 function mergeTrendPoints(samples: HealthSample[]) {
@@ -198,7 +219,9 @@ const selectedMonitorSamples = computed<HealthSample[]>(() => {
   const selectedMac = selectedDeviceMac.value;
   // serial 设备心率/血氧变化缓慢，不做稀疏化，避免曲线出现间隙
   const flatRunLimit = ingestMode === "serial" ? 99999 : 10;
-  const displayReadyTrend = focusTrend.value.filter((sample) => isDisplayReadySample(sample, ingestMode));
+  const displayReadyTrend = focusTrend.value.filter(
+    (sample) => isDisplayReadySample(sample, ingestMode) && isFreshEnoughForDisplay(sample, ingestMode),
+  );
   const validTrend = displayReadyTrend;
   
   if (ingestMode === "serial") {
@@ -209,7 +232,11 @@ const selectedMonitorSamples = computed<HealthSample[]>(() => {
     return sparseDeduplicateSamples(validTrend, flatRunLimit);
   }
 
-  if (focusLatest.value && shouldAcceptSample(focusLatest.value, selectedMac, ingestMode)) {
+  if (
+    focusLatest.value
+    && shouldAcceptSample(focusLatest.value, selectedMac, ingestMode)
+    && isFreshEnoughForDisplay(focusLatest.value, ingestMode)
+  ) {
     if (displayReadyTrend.length) {
       return sparseDeduplicateSamples(mergeTrendPoints([...displayReadyTrend, focusLatest.value]).slice(-120), flatRunLimit);
     }
@@ -230,7 +257,11 @@ const selectedMonitorSamples = computed<HealthSample[]>(() => {
 const selectedMonitorCurrentSample = computed<HealthSample | null>(() => {
   const ingestMode = selectedDevice.value?.ingest_mode ?? null;
   const selectedMac = selectedDeviceMac.value;
-  if (focusLatest.value && shouldAcceptSample(focusLatest.value, selectedMac, ingestMode)) {
+  if (
+    focusLatest.value
+    && shouldAcceptSample(focusLatest.value, selectedMac, ingestMode)
+    && isFreshEnoughForDisplay(focusLatest.value, ingestMode)
+  ) {
     return focusLatest.value;
   }
   const samples = selectedMonitorSamples.value;
@@ -509,7 +540,9 @@ async function refreshTrend(mac = selectedDeviceMac.value, minutes = trendWindow
   const ingestMode = getDeviceByMac(mac)?.ingest_mode ?? null;
   const trend = await api.getTrend(mac, minutes, 120).catch(() => [] as HealthSample[]);
   const mergedTrend = mergeHealthSeries(trend);
-  const displayReady = mergedTrend.filter((sample) => isDisplayReadySample(sample, ingestMode));
+  const displayReady = mergedTrend.filter(
+    (sample) => isDisplayReadySample(sample, ingestMode) && isFreshEnoughForDisplay(sample, ingestMode),
+  );
   const storeSamples = displayReady;
   const gated = storeSamples.filter((sample) => samplePassesSelectionGate(sample, mac));
   if (gated.length) {

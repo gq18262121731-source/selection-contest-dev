@@ -43,7 +43,8 @@ class AgentOmniResponse {
     this.error,
   });
 
-  bool get hasAudio => audioBase64.trim().isNotEmpty || audioUrl.trim().isNotEmpty;
+  bool get hasAudio =>
+      audioBase64.trim().isNotEmpty || audioUrl.trim().isNotEmpty;
 
   factory AgentOmniResponse.fromJson(Map<String, dynamic> json) {
     return AgentOmniResponse(
@@ -58,6 +59,31 @@ class AgentOmniResponse {
       error: json['error'] as String?,
     );
   }
+}
+
+enum AgentOmniStreamEventType {
+  delta,
+  audioDelta,
+  audioCompleted,
+  completed,
+}
+
+class AgentOmniStreamEvent {
+  final AgentOmniStreamEventType type;
+  final String delta;
+  final String encoding;
+  final int sampleRate;
+  final int channels;
+  final AgentOmniResponse? response;
+
+  const AgentOmniStreamEvent({
+    required this.type,
+    this.delta = '',
+    this.encoding = '',
+    this.sampleRate = 24000,
+    this.channels = 1,
+    this.response,
+  });
 }
 
 class AgentRepository {
@@ -219,6 +245,73 @@ class AgentRepository {
     }
   }
 
+  Stream<AgentOmniStreamEvent> streamOmniMessage(
+    List<int> audioBytes,
+    String? deviceMac, {
+    required String role,
+    String? prompt,
+  }) async* {
+    try {
+      final formData = FormData.fromMap(<String, dynamic>{
+        'file': MultipartFile.fromBytes(
+          audioBytes,
+          filename: 'input.wav',
+        ),
+        'role': role.trim().toLowerCase(),
+        if (deviceMac != null && deviceMac.trim().isNotEmpty)
+          'device_mac': deviceMac.trim(),
+        if (prompt != null && prompt.trim().isNotEmpty) 'prompt': prompt.trim(),
+      });
+
+      final response = await _apiClient.postStream(
+        'omni/analyze/stream',
+        data: formData,
+        sendTimeout: _omniUploadTimeout,
+        receiveTimeout: _omniReceiveTimeout,
+      );
+      final data = response.data;
+      if (data == null) {
+        throw Exception('语音服务未返回数据');
+      }
+
+      var buffer = '';
+      await for (final chunk in _resolveTextStream(data)) {
+        if (chunk.isEmpty) {
+          continue;
+        }
+
+        buffer += chunk;
+        while (true) {
+          final lineBreak = buffer.indexOf('\n');
+          if (lineBreak == -1) {
+            break;
+          }
+
+          final line = buffer.substring(0, lineBreak);
+          buffer = buffer.substring(lineBreak + 1);
+          final event = _parseOmniStreamLine(line);
+          if (event != null) {
+            yield event;
+          }
+        }
+      }
+
+      final tail = _parseOmniStreamLine(buffer);
+      if (tail != null) {
+        yield tail;
+      }
+    } on DioException catch (error) {
+      if (error.type == DioExceptionType.receiveTimeout) {
+        throw Exception('语音请求处理时间较长，请稍候再试。');
+      }
+      final responseData = error.response?.data;
+      if (responseData is Map && responseData['detail'] != null) {
+        throw Exception(responseData['detail'].toString());
+      }
+      throw Exception(error.message ?? '语音分析失败');
+    }
+  }
+
   Stream<String> syntheticChunks(String text) async* {
     yield* _yieldSyntheticChunks(text);
   }
@@ -326,6 +419,74 @@ class AgentRepository {
     }
   }
 
+  AgentOmniStreamEvent? _parseOmniStreamLine(String rawLine) {
+    final payloadLine = rawLine.trimLeft();
+    if (payloadLine.trim().isEmpty) {
+      return null;
+    }
+
+    final payload = payloadLine.startsWith('data:')
+        ? payloadLine.substring(5).trimLeft()
+        : payloadLine;
+    if (payload.trim().isEmpty || payload.trim() == '[DONE]') {
+      return null;
+    }
+
+    final event = Map<String, dynamic>.from(jsonDecode(payload) as Map);
+    final type = event['type'] as String? ?? '';
+    if (type == 'answer.delta') {
+      final delta = event['delta'] as String? ?? '';
+      if (!_containsRenderableText(delta)) {
+        return null;
+      }
+      return AgentOmniStreamEvent(
+        type: AgentOmniStreamEventType.delta,
+        delta: delta,
+      );
+    }
+
+    if (type == 'audio.completed') {
+      return AgentOmniStreamEvent(
+        type: AgentOmniStreamEventType.audioCompleted,
+        response: AgentOmniResponse.fromJson(<String, dynamic>{
+          ...event,
+          'ok': true,
+          'text': '',
+        }),
+      );
+    }
+
+    if (type == 'audio.delta') {
+      final delta = event['delta'] as String? ?? '';
+      if (delta.trim().isEmpty) {
+        return null;
+      }
+      return AgentOmniStreamEvent(
+        type: AgentOmniStreamEventType.audioDelta,
+        delta: delta,
+        encoding: event['encoding'] as String? ?? 'pcm_s16le',
+        sampleRate: event['sample_rate'] as int? ?? 24000,
+        channels: event['channels'] as int? ?? 1,
+      );
+    }
+
+    if (type == 'answer.completed') {
+      return AgentOmniStreamEvent(
+        type: AgentOmniStreamEventType.completed,
+        response: AgentOmniResponse.fromJson(<String, dynamic>{
+          ...event,
+          'text': event['answer'] as String? ?? '',
+        }),
+      );
+    }
+
+    if (type == 'error') {
+      throw Exception(event['error'] as String? ?? '语音分析失败');
+    }
+
+    return null;
+  }
+
   Stream<String> _yieldSyntheticChunks(String text) async* {
     final normalized = text.trim();
     if (normalized.isEmpty) {
@@ -365,7 +526,9 @@ class AgentRepository {
       final reachedParagraphBoundary =
           char == '\n' && current.trim().isNotEmpty;
 
-      if (reachedParagraphBoundary || reachedHardBoundary || reachedSoftBoundary) {
+      if (reachedParagraphBoundary ||
+          reachedHardBoundary ||
+          reachedSoftBoundary) {
         final value = current;
         if (_containsRenderableText(value)) {
           chunks.add(value);

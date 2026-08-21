@@ -78,6 +78,8 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
   Map<String, dynamic>? _cameraSetup;
   Map<String, dynamic>? _cameraHealth;
   Map<String, dynamic>? _cameraStreamStatus;
+  Map<String, dynamic>? _visionRuntimeConfig;
+  Map<String, dynamic>? _visionSourceStatus;
   String? _lastRequestUrl;
   int? _lastStatusCode;
   String? _lastContentType;
@@ -148,6 +150,8 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
       _cameraSetup = null;
       _cameraHealth = null;
       _cameraStreamStatus = null;
+      _visionRuntimeConfig = null;
+      _visionSourceStatus = null;
       _lastRequestUrl = null;
       _lastStatusCode = null;
       _lastContentType = null;
@@ -236,6 +240,36 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
     }
   }
 
+  Future<void> _loadVisionBridgeMeta({bool silent = false}) async {
+    try {
+      final responses = await Future.wait([
+        _dio.get<Map<String, dynamic>>(
+          _apiUrl('/api/v1/video-bridge/runtime-config'),
+        ),
+        _dio.get<Map<String, dynamic>>(
+          _apiUrl('/api/v1/video-bridge/vision/source'),
+        ),
+      ]);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _visionRuntimeConfig = responses[0].data ?? <String, dynamic>{};
+        _visionSourceStatus = responses[1].data ?? <String, dynamic>{};
+      });
+    } catch (error) {
+      if (!mounted || silent) {
+        return;
+      }
+      setState(() {
+        _visionRuntimeConfig = null;
+        _visionSourceStatus = null;
+      });
+    }
+  }
+
   Future<void> _probeFamilySnapshot({bool silent = false}) async {
     if (!mounted || _snapshotProbeInFlight) {
       return;
@@ -315,7 +349,16 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
   }
 
   Future<void> _refreshStreamHealth({bool silent = false}) async {
-    await _loadCameraMeta(silent: silent);
+    await Future.wait([
+      _loadCameraMeta(silent: silent),
+      _loadVisionBridgeMeta(silent: silent),
+    ]);
+    if (_visionFrameReady()) {
+      if (!silent && mounted) {
+        _updatePlayState(_VideoPlayState.playing);
+      }
+      return;
+    }
     await _probeFamilySnapshot(silent: silent);
   }
 
@@ -323,7 +366,14 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
     if (!mounted) {
       return;
     }
-    await _loadCameraMeta(silent: true);
+    await Future.wait([
+      _loadCameraMeta(silent: true),
+      _loadVisionBridgeMeta(silent: true),
+    ]);
+    if (_visionFrameReady()) {
+      _updatePlayState(_VideoPlayState.playing);
+      return;
+    }
     if (_playState != _VideoPlayState.playing) {
       await _probeFamilySnapshot(silent: true);
     }
@@ -533,7 +583,50 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
     return '$value';
   }
 
+  bool _visionFrameReady() {
+    final source = _visionSourceStatus;
+    if (source == null) {
+      return false;
+    }
+    return source['running'] == true &&
+        (source['main_connected'] == true ||
+            source['analysis_connected'] == true);
+  }
+
+  String? _visionLatestFrameUrl() {
+    final runtime = _visionRuntimeConfig;
+    if (!_visionFrameReady() || runtime == null) {
+      return null;
+    }
+    final baseUrl = '${runtime['base_url'] ?? ''}'.trim();
+    final cameraId = '${runtime['camera_id'] ?? 'camera_01'}'.trim();
+    if (baseUrl.isEmpty) {
+      return null;
+    }
+    final normalizedBaseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    final normalizedCameraId = cameraId.isEmpty ? 'camera_01' : cameraId;
+    return '$normalizedBaseUrl/stream/latest-frame.jpg?camera_id=$normalizedCameraId';
+  }
+
   Future<void> _openCameraConfigSheet() async {
+    if (_visionFrameReady()) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) {
+          return _VisionSourceSheet(
+            frameUrl: _visionLatestFrameUrl(),
+            sourceStatus: _visionSourceStatus,
+            runtimeConfig: _visionRuntimeConfig,
+          );
+        },
+      );
+      return;
+    }
+
     final draft = _CameraConfigDraft.fromMap(_cameraSetup);
     final sourceMode = ValueNotifier<String>(draft.cameraSourceMode);
     final defaultQuality = ValueNotifier<_FamilyQualityMode>(
@@ -944,6 +1037,7 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
   Widget build(BuildContext context) {
     final streamUrl = _familyStreamUrl();
     final snapshotProbeUrl = _familySnapshotUrl();
+    final visionFrameUrl = _visionLatestFrameUrl();
     final familyMetrics = _selectedFamilyProfileStatus();
 
     return Scaffold(
@@ -963,10 +1057,10 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
           IconButton(
             onPressed: _openCameraConfigSheet,
             icon: const Icon(
-              Icons.settings_input_component_outlined,
+              Icons.linked_camera_outlined,
               color: AppColors.textSub,
             ),
-            tooltip: 'Camera source',
+            tooltip: visionFrameUrl != null ? 'Vision source' : 'Camera source',
           ),
           IconButton(
             onPressed: () => _restartVideo(manual: true),
@@ -1038,12 +1132,21 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
               child: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
-                  _FamilyMjpegPlayer(
-                    streamUrl: streamUrl,
-                    reloadToken: _streamReloadToken,
-                    onLoading: _reportStreamLoading,
-                    onError: _reportStreamError,
-                  ),
+                  if (visionFrameUrl != null)
+                    _VisionLatestFramePlayer(
+                      frameUrl: visionFrameUrl,
+                      reloadToken: _streamReloadToken,
+                      onPlaying: () =>
+                          _updatePlayState(_VideoPlayState.playing),
+                      onError: _reportStreamError,
+                    )
+                  else
+                    _FamilyMjpegPlayer(
+                      streamUrl: streamUrl,
+                      reloadToken: _streamReloadToken,
+                      onLoading: _reportStreamLoading,
+                      onError: _reportStreamError,
+                    ),
                   Positioned(
                     left: 12,
                     top: 12,
@@ -1070,8 +1173,14 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _openCameraConfigSheet,
-                  icon: const Icon(Icons.tune),
-                  label: const Text('Camera Source'),
+                  icon: Icon(
+                    visionFrameUrl != null
+                        ? Icons.linked_camera_outlined
+                        : Icons.tune,
+                  ),
+                  label: Text(
+                    visionFrameUrl != null ? 'Vision Source' : 'Camera Source',
+                  ),
                 ),
               ),
             ],
@@ -1234,6 +1343,11 @@ class _FamilyVideoScreenState extends State<FamilyVideoScreen> {
                       label: 'Processed debug',
                       value: _processedDebugUrl(),
                     ),
+                    const SizedBox(height: 8),
+                    _MetaRow(
+                      label: 'Vision frame',
+                      value: visionFrameUrl ?? '--',
+                    ),
                     const SizedBox(height: 12),
                     const Text(
                       'camera/setup',
@@ -1348,6 +1462,270 @@ class _FamilyMjpegPlayerState extends State<_FamilyMjpegPlayer> {
           );
         },
       ),
+    );
+  }
+}
+
+class _VisionLatestFramePlayer extends StatefulWidget {
+  final String frameUrl;
+  final int reloadToken;
+  final VoidCallback onPlaying;
+  final void Function(Object error) onError;
+
+  const _VisionLatestFramePlayer({
+    required this.frameUrl,
+    required this.reloadToken,
+    required this.onPlaying,
+    required this.onError,
+  });
+
+  @override
+  State<_VisionLatestFramePlayer> createState() =>
+      _VisionLatestFramePlayerState();
+}
+
+class _VisionLatestFramePlayerState extends State<_VisionLatestFramePlayer> {
+  Timer? _timer;
+  int _frameToken = 0;
+  Uint8List? _latestFrame;
+  Object? _lastError;
+  bool _loading = false;
+  late final Dio _dio;
+
+  @override
+  void initState() {
+    super.initState();
+    _dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 2),
+        receiveTimeout: const Duration(seconds: 2),
+      ),
+    );
+    _fetchFrame();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _VisionLatestFramePlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.frameUrl != widget.frameUrl ||
+        oldWidget.reloadToken != widget.reloadToken) {
+      setState(() {
+        _frameToken += 1;
+        _latestFrame = null;
+        _lastError = null;
+      });
+      _fetchFrame();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _dio.close(force: true);
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(milliseconds: 250), (_) {
+      if (!mounted) {
+        return;
+      }
+      _fetchFrame();
+    });
+  }
+
+  String _currentUrl() {
+    final separator = widget.frameUrl.contains('?') ? '&' : '?';
+    return '${widget.frameUrl}${separator}ts=${DateTime.now().millisecondsSinceEpoch}&frame=$_frameToken';
+  }
+
+  Future<void> _fetchFrame() async {
+    if (_loading || !mounted) {
+      return;
+    }
+    _loading = true;
+    final nextToken = _frameToken + 1;
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        _currentUrl(),
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: const <String, String>{
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        ),
+      );
+      final rawBytes = response.data;
+      if (rawBytes == null || rawBytes.isEmpty) {
+        throw StateError('VISION_FRAME_EMPTY');
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _frameToken = nextToken;
+        _latestFrame = Uint8List.fromList(rawBytes.cast<int>());
+        _lastError = null;
+      });
+      widget.onPlaying();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _lastError = error;
+      });
+      widget.onError(error);
+    } finally {
+      _loading = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_latestFrame == null) {
+      return _VideoPlaceholder(
+        icon: _lastError == null
+            ? Icons.wifi_tethering_outlined
+            : Icons.videocam_off_outlined,
+        title: _lastError == null
+            ? 'Connecting vision stream...'
+            : 'Vision frame unavailable',
+        subtitle: _lastError == null
+            ? 'Using latest frame relay from vision subsystem'
+            : '$_lastError',
+        showSpinner: _lastError == null,
+      );
+    }
+    return Container(
+      color: const Color(0xFF020617),
+      child: Image.memory(
+        _latestFrame!,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) => _VideoPlaceholder(
+          icon: Icons.videocam_off_outlined,
+          title: 'Vision frame unavailable',
+          subtitle: '$error',
+        ),
+      ),
+    );
+  }
+}
+
+class _VisionSourceSheet extends StatelessWidget {
+  final String? frameUrl;
+  final Map<String, dynamic>? sourceStatus;
+  final Map<String, dynamic>? runtimeConfig;
+
+  const _VisionSourceSheet({
+    required this.frameUrl,
+    required this.sourceStatus,
+    required this.runtimeConfig,
+  });
+
+  String _value(Object? value) {
+    if (value == null || '$value'.trim().isEmpty) {
+      return '--';
+    }
+    return '$value';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.58,
+      minChildSize: 0.38,
+      maxChildSize: 0.78,
+      builder: (context, controller) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: ListView(
+            controller: controller,
+            children: <Widget>[
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Vision Source',
+                style: TextStyle(
+                  color: AppColors.textMain,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'The family video view is using the connected vision subsystem. Camera IP and password are not required here.',
+                style: TextStyle(
+                  color: AppColors.textSub,
+                  fontSize: 14,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+              _InfoCard(
+                title: 'Active camera',
+                children: <Widget>[
+                  _MetaRow(
+                    label: 'Camera',
+                    value: _value(sourceStatus?['camera_id'] ??
+                        runtimeConfig?['camera_id']),
+                  ),
+                  const SizedBox(height: 8),
+                  _MetaRow(
+                    label: 'Status',
+                    value:
+                        '${_value(sourceStatus?['main_stream_state'])} / connected=${_value(sourceStatus?['main_connected'])}',
+                  ),
+                  const SizedBox(height: 8),
+                  _MetaRow(
+                    label: 'FPS',
+                    value: _value(sourceStatus?['main_capture_fps']),
+                  ),
+                  const SizedBox(height: 8),
+                  _MetaRow(
+                    label: 'Frame age',
+                    value: '${_value(sourceStatus?['main_frame_age_ms'])} ms',
+                  ),
+                  const SizedBox(height: 8),
+                  _MetaRow(
+                    label: 'RTSP',
+                    value: _value(sourceStatus?['main_rtsp_url_masked']),
+                  ),
+                  const SizedBox(height: 8),
+                  _MetaRow(
+                    label: 'Frame URL',
+                    value: _value(frameUrl),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Done'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

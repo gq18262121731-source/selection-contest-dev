@@ -3,10 +3,15 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { api, type AlarmRecord, type SessionUser } from "../../api/client";
 import { focusCommunityWorkspaceDevice } from "../../composables/useCommunityWorkspace";
 import type { PageKey } from "../../composables/useHashRouting";
+import {
+  emergencyAlarmStorageKey,
+  extractRobotAlarmExtension,
+} from "../../utils/robotEmergencyPolicy";
 import CommunitySosOverlay from "./CommunitySosOverlay.vue";
 import FallAlertOverlay from "./FallAlertOverlay.vue";
 import GlobalHeader from "./GlobalHeader.vue";
 import PrimaryNav from "./PrimaryNav.vue";
+import RobotWorkspaceNav from "../robot/RobotWorkspaceNav.vue";
 import ToolEntryMenu from "./ToolEntryMenu.vue";
 
 const props = defineProps<{
@@ -19,6 +24,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   logout: [];
   navigate: [page: PageKey];
+  openEmergency: [incidentId: string];
 }>();
 
 const activeAlarmCount = ref(0);
@@ -26,10 +32,19 @@ const activeRealtimeAlarms = ref<AlarmRecord[]>([]);
 const simulatedAlarms = ref<AlarmRecord[]>([]);
 const acknowledgingSos = ref(false);
 const acknowledgingFall = ref(false);
+const dismissedFallAlarmIds = ref(new Set<string>());
 const manuallyAcknowledging = ref(false);
 const isCommunityWorkspace = computed(
   () => props.sessionUser.role === "community" || props.sessionUser.role === "admin",
 );
+const robotWorkspacePages = new Set<PageKey>([
+  "robot-tasks",
+  "robot-status",
+  "robot-navigation",
+  "robot-follow",
+  "robot-emergency",
+]);
+const showRobotWorkspaceNav = computed(() => robotWorkspacePages.has(props.activePage));
 const activeSosAlarms = computed(() =>
   activeRealtimeAlarms.value
     .filter((alarm) => !alarm.acknowledged && isRealSosAlarm(alarm))
@@ -39,14 +54,20 @@ const primarySosAlarm = computed(() => activeSosAlarms.value[0] ?? null);
 const additionalSosCount = computed(() => Math.max(0, activeSosAlarms.value.length - 1));
 const activeFallAlarms = computed(() =>
   activeRealtimeAlarms.value
-    .filter((alarm) => !alarm.acknowledged && isFallAlarm(alarm))
+    .filter((alarm) =>
+      !alarm.acknowledged
+      && !dismissedFallAlarmIds.value.has(alarm.id)
+      && isFallAlarm(alarm),
+    )
     .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()),
 );
 const primaryFallAlarm = computed(() => activeFallAlarms.value[0] ?? null);
 const additionalFallCount = computed(() => Math.max(0, activeFallAlarms.value.length - 1));
 
 let refreshTimer: number | null = null;
+let alarmReconnectTimer: number | null = null;
 let alarmChannel: WebSocket | null = null;
+let alarmRuntimeActive = false;
 let lastPresentedAlarmId = "";
 let sosAudioElement: HTMLAudioElement | null = null;
 let unlockAudioListenerBound = false;
@@ -165,11 +186,17 @@ function presentPrimaryAlarm() {
 }
 
 function stopAlarmRuntime() {
+  alarmRuntimeActive = false;
   stopSosToneLoop();
   if (refreshTimer !== null) {
     window.clearInterval(refreshTimer);
     refreshTimer = null;
   }
+  if (alarmReconnectTimer !== null) {
+    window.clearTimeout(alarmReconnectTimer);
+    alarmReconnectTimer = null;
+  }
+  if (alarmChannel) alarmChannel.onclose = null;
   alarmChannel?.close();
   alarmChannel = null;
 }
@@ -180,6 +207,12 @@ async function refreshAlarmState() {
 }
 
 function connectAlarmSocket() {
+  if (!alarmRuntimeActive) return;
+  if (alarmReconnectTimer !== null) {
+    window.clearTimeout(alarmReconnectTimer);
+    alarmReconnectTimer = null;
+  }
+  if (alarmChannel) alarmChannel.onclose = null;
   alarmChannel?.close();
   alarmChannel = null;
   if (!isCommunityWorkspace.value) return;
@@ -204,14 +237,17 @@ function connectAlarmSocket() {
   };
   alarmChannel.onclose = () => {
     alarmChannel = null;
-    setTimeout(() => {
-      if (isCommunityWorkspace.value) connectAlarmSocket();
+    if (!alarmRuntimeActive || !isCommunityWorkspace.value) return;
+    alarmReconnectTimer = window.setTimeout(() => {
+      alarmReconnectTimer = null;
+      if (alarmRuntimeActive && isCommunityWorkspace.value) connectAlarmSocket();
     }, 2000);
   };
 }
 
 function startAlarmRuntime() {
   stopAlarmRuntime();
+  alarmRuntimeActive = true;
   void refreshAlarmState();
   connectAlarmSocket();
   refreshTimer = window.setInterval(() => {
@@ -219,10 +255,13 @@ function startAlarmRuntime() {
   }, 5000);
 }
 
-function handleSOSSimulation(event: CustomEvent) {
+function handleAlarmSimulation(event: CustomEvent) {
   if (!isCommunityWorkspace.value) return;
   const mockAlarm = event.detail as AlarmRecord;
-  simulatedAlarms.value.push(mockAlarm);
+  simulatedAlarms.value = [
+    mockAlarm,
+    ...simulatedAlarms.value.filter((alarm) => alarm.id !== mockAlarm.id),
+  ];
   const realAlarms = activeRealtimeAlarms.value.filter((alarm) => !alarm.id.startsWith("sim_"));
   const allAlarms = [...realAlarms, ...simulatedAlarms.value];
   activeRealtimeAlarms.value = allAlarms
@@ -239,11 +278,14 @@ watch(() => props.sessionUser.id, () => {
 onMounted(() => {
   bindAudioUnlockListeners();
   startAlarmRuntime();
-  window.addEventListener("sos-simulation", handleSOSSimulation as EventListener);
+  window.addEventListener("sos-simulation", handleAlarmSimulation as EventListener);
+  window.addEventListener("fall-alert-preview", handleAlarmSimulation as EventListener);
 });
 
 onUnmounted(() => {
   stopAlarmRuntime();
+  window.removeEventListener("sos-simulation", handleAlarmSimulation as EventListener);
+  window.removeEventListener("fall-alert-preview", handleAlarmSimulation as EventListener);
   if (unlockAudioListenerBound && unlockAudioHandler) {
     window.removeEventListener("pointerdown", unlockAudioHandler);
     window.removeEventListener("keydown", unlockAudioHandler);
@@ -291,12 +333,36 @@ async function acknowledgePrimaryFall() {
   if (!current) return;
   acknowledgingFall.value = true;
   try {
-    await api.ackAlarm(current.id);
-    await refreshAlarmState();
+    if (current.id.startsWith("sim_")) {
+      simulatedAlarms.value = simulatedAlarms.value.filter((alarm) => alarm.id !== current.id);
+      const realAlarms = activeRealtimeAlarms.value.filter((alarm) => !alarm.id.startsWith("sim_"));
+      syncAlarmState(realAlarms);
+    } else {
+      await api.ackAlarm(current.id);
+      await refreshAlarmState();
+    }
     lastPresentedAlarmId = "";
   } finally {
     acknowledgingFall.value = false;
   }
+}
+
+function openPrimaryFallEmergency(incidentId: string) {
+  const current = primaryFallAlarm.value;
+  if (!current) return;
+  const extension = extractRobotAlarmExtension(current);
+  if (!extension || extension.incident_id !== incidentId) return;
+  try {
+    window.sessionStorage.setItem(
+      emergencyAlarmStorageKey(incidentId),
+      JSON.stringify(extension),
+    );
+  } catch {
+    // The route remains usable even when browser storage is unavailable.
+  }
+  dismissedFallAlarmIds.value = new Set([...dismissedFallAlarmIds.value, current.id]);
+  lastPresentedAlarmId = "";
+  emit("openEmergency", incidentId);
 }
 
 watch(
@@ -344,6 +410,13 @@ watch(
         @logout="emit('logout')"
       />
 
+      <RobotWorkspaceNav
+        v-if="showRobotWorkspaceNav"
+        :active-page="activePage"
+        :allowed-pages="allowedPages"
+        @navigate="emit('navigate', $event)"
+      />
+
       <div
         v-if="!isCommunityWorkspace && allowedPages.length"
         class="app-shell__controls"
@@ -379,6 +452,7 @@ watch(
       :additional-count="additionalFallCount"
       :acknowledging="acknowledgingFall"
       @acknowledge="acknowledgePrimaryFall"
+      @open-emergency="openPrimaryFallEmergency"
     />
   </main>
 </template>

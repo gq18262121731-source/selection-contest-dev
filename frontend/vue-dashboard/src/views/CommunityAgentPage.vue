@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { Bot, RefreshCw, SendHorizontal, Sparkles, Square } from "lucide-vue-next";
-import { computed, toRef, watch } from "vue";
+import { Bot, ClipboardList, RefreshCw, SendHorizontal, Sparkles, Square } from "lucide-vue-next";
+import { computed, ref, toRef, watch } from "vue";
 import type { SessionUser } from "../api/client";
 import AgentMarkdownContent from "../components/agent/AgentMarkdownContent.vue";
 import AgentTracePanel from "../components/agent/AgentTracePanel.vue";
 import CommunityAgentAttachmentRenderer from "../components/agent/CommunityAgentAttachmentRenderer.vue";
+import CommunityHandoverReport from "../components/CommunityHandoverReport.vue";
 import PageHeader from "../components/layout/PageHeader.vue";
 import { useCommunityAgentWorkbench } from "../composables/useCommunityAgentWorkbench";
 import { useCommunityWorkspace } from "../composables/useCommunityWorkspace";
 
 const props = defineProps<{
   sessionUser: SessionUser;
+  initialReportOpen?: boolean;
   /**
    * Trigger refresh behavior when user re-clicks the nav entry,
    * even if the route/hash doesn't change.
@@ -19,6 +21,7 @@ const props = defineProps<{
 }>();
 
 const workspace = useCommunityWorkspace(toRef(props, "sessionUser"));
+const showCommunityReport = ref(Boolean(props.initialReportOpen));
 const workbench = useCommunityAgentWorkbench(
   () => workspace.deviceStatuses.value.map((item) => item.device_mac),
   () => workspace.selectedDeviceMac.value,
@@ -32,6 +35,13 @@ watch(
     if (prev == null) return;
     workbench.clearConversationState();
     void workbench.loadContext();
+  },
+);
+
+watch(
+  () => props.initialReportOpen,
+  (open) => {
+    if (open) showCommunityReport.value = true;
   },
 );
 
@@ -53,6 +63,10 @@ const quickSuggestions = computed(() => workbench.quickActions.value.slice(0, 4)
 function submitFreeChat() {
   void workbench.submit("free_chat");
 }
+
+function toggleCommunityReport() {
+  showCommunityReport.value = !showCommunityReport.value;
+}
 </script>
 
 <template>
@@ -62,7 +76,38 @@ function submitFreeChat() {
       title="社区智能体工作台"
       description="围绕单个老人或整个社区，直接发起真实分析、图表整理、报告生成和综合建议。"
       :meta="headerBadges"
-    />
+    >
+      <template #actions>
+        <button
+          type="button"
+          class="agent-report-entry"
+          :class="{ 'agent-report-entry--active': showCommunityReport }"
+          @click="toggleCommunityReport"
+        >
+          <span class="agent-report-entry__icon">
+            <ClipboardList :size="20" />
+          </span>
+          <span class="agent-report-entry__copy">
+            <strong>社区报告</strong>
+            <small>{{ showCommunityReport ? "已在下方展开" : "交接报告与运营摘要" }}</small>
+          </span>
+        </button>
+      </template>
+    </PageHeader>
+
+    <section v-if="showCommunityReport" class="agent-report-panel">
+      <p v-if="workspace.dashboardLoadError.value" class="feedback-banner feedback-error">
+        {{ workspace.dashboardLoadError.value }}
+      </p>
+
+      <CommunityHandoverReport
+        v-else
+        :community-name="workspace.community.value?.name ?? '当前社区'"
+        :device-macs="workspace.deviceStatuses.value.map((item) => item.device_mac)"
+        :device-statuses="workspace.deviceStatuses.value"
+        :recent-alerts="workspace.recentAlerts.value"
+      />
+    </section>
 
     <section class="agent-shell">
       <div class="agent-controls">
@@ -297,6 +342,86 @@ function submitFreeChat() {
   padding-bottom: 40px;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+.agent-report-entry {
+  min-width: 300px;
+  min-height: 116px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 2px solid #cbd5e1;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  transition: all 200ms ease;
+}
+
+.agent-report-entry:hover {
+  transform: translateY(-2px);
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.16);
+}
+
+.agent-report-entry--active {
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.2);
+}
+
+.agent-report-entry__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.agent-report-entry__copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.agent-report-entry__copy strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.agent-report-entry__copy small {
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.agent-report-entry--active .agent-report-entry__copy strong,
+.agent-report-entry:hover .agent-report-entry__copy strong {
+  color: #1e40af;
+}
+
+.agent-report-entry--active .agent-report-entry__copy small,
+.agent-report-entry:hover .agent-report-entry__copy small {
+  color: #2563eb;
+}
+
+.agent-report-panel {
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .agent-shell {
@@ -795,6 +920,10 @@ function submitFreeChat() {
 @media (max-width: 980px) {
   .agent-shell {
     padding: 24px;
+  }
+
+  .agent-report-entry {
+    min-width: 100%;
   }
 
   .agent-controls {

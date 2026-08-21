@@ -68,6 +68,12 @@ class Settings(BaseSettings):
     qwen_enable_rerank: bool = False
     tavily_api_key: str = ""
 
+    weather_provider: Literal["mock", "qweather"] = "mock"
+    qweather_api_key: str = ""
+    qweather_api_host: str = ""
+    qweather_location: str = ""
+    qweather_timeout_seconds: float = Field(default=3.0, ge=0.5, le=10.0)
+
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:1.7b"
 
@@ -181,6 +187,10 @@ class Settings(BaseSettings):
     vision_service_poll_hz: float = 2.0
     vision_service_timeout_seconds: float = 2.5
     vision_service_push_token: str = ""
+    robot_gateway_enabled: bool = True
+    robot_gateway_base_url: str = "http://127.0.0.1:8090"
+    robot_gateway_timeout_seconds: float = 1.5
+    robot_simulation_enabled: bool = False
     camera_ptz_move_seconds: float = 0.35
     camera_ptz_speed: float = 0.45
     camera1_name: str = "camera1"
@@ -459,6 +469,15 @@ class Settings(BaseSettings):
     @property
     def qwen_llm_configured(self) -> bool:
         return bool(self.dashscope_api_key.strip() and (self._normalize_qwen_model(self.qwen_model) or self.qwen_omni_model.strip()))
+
+    @property
+    def qweather_configured(self) -> bool:
+        return bool(
+            self.weather_provider == "qweather"
+            and self.qweather_api_key.strip()
+            and self.qweather_api_host.strip()
+            and self.qweather_location.strip()
+        )
 
     @property
     def qwen_missing_config_fields(self) -> list[str]:

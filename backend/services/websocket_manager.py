@@ -66,3 +66,11 @@ class WebSocketManager:
                 await socket.send_json(payload)
             except Exception:
                 await self.disconnect_alarm(socket)
+
+    async def broadcast_robot_event(self, payload: dict[str, Any]) -> None:
+        sockets = list(self._alarm_channels)
+        for socket in sockets:
+            try:
+                await socket.send_json(payload)
+            except Exception:
+                await self.disconnect_alarm(socket)

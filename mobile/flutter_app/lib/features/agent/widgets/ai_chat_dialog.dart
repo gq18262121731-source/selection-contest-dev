@@ -216,9 +216,7 @@ class _AiChatDialogState extends State<AiChatDialog> {
     }
 
     if (!voiceProvider.isVoiceAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_buildVoiceUnavailableText())),
-      );
+      await _sendDemoVoiceFallback();
       return;
     }
 
@@ -289,8 +287,8 @@ class _AiChatDialogState extends State<AiChatDialog> {
               child: ListView.builder(
                 controller: _scrollController,
                 shrinkWrap: true,
-                itemCount:
-                    provider.messages.length + (provider.status == AgentStatus.loading ? 1 : 0),
+                itemCount: provider.messages.length +
+                    (provider.status == AgentStatus.loading ? 1 : 0),
                 itemBuilder: (BuildContext context, int index) {
                   if (index == provider.messages.length) {
                     return AgentLoadingBubble(
@@ -307,19 +305,19 @@ class _AiChatDialogState extends State<AiChatDialog> {
                       provider.status == AgentStatus.streaming &&
                       index == provider.messages.length - 1;
 
-                    return AgentMessageBubble(
-                      text: message.content,
-                      isUser: isUser,
-                      isStreaming: isStreaming,
-                      accent: _experience.accent,
-                      assistantIcon: _experience.assistantIcon,
-                      assistantLabel: _experience.assistantLabel,
-                      userLabel: _experience.userLabel,
-                      streamingLabel: _experience.streamingLabel,
-                      fontSize: widget.isElder ? 18 : 14,
-                      compact: !widget.isElder,
-                      onSpeak: () => provider.ttsSpeak(context, message.content),
-                    );
+                  return AgentMessageBubble(
+                    text: message.content,
+                    isUser: isUser,
+                    isStreaming: isStreaming,
+                    accent: _experience.accent,
+                    assistantIcon: _experience.assistantIcon,
+                    assistantLabel: _experience.assistantLabel,
+                    userLabel: _experience.userLabel,
+                    streamingLabel: _experience.streamingLabel,
+                    fontSize: widget.isElder ? 18 : 14,
+                    compact: !widget.isElder,
+                    onSpeak: () => provider.ttsSpeak(context, message.content),
+                  );
                 },
               ),
             ),
@@ -409,7 +407,8 @@ class _AiChatDialogState extends State<AiChatDialog> {
         children: <Widget>[
           Icon(
             selectedMacs.isEmpty ? Icons.info_outline : Icons.devices_outlined,
-            color: selectedMacs.isEmpty ? AppColors.textMuted : _experience.accent,
+            color:
+                selectedMacs.isEmpty ? AppColors.textMuted : _experience.accent,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -454,9 +453,7 @@ class _AiChatDialogState extends State<AiChatDialog> {
               selectedColor: _experience.accent.withValues(alpha: 0.15),
               backgroundColor: AppColors.surface,
               side: BorderSide(
-                color: isSelected
-                    ? _experience.accent
-                    : AppColors.border,
+                color: isSelected ? _experience.accent : AppColors.border,
               ),
               label: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -465,7 +462,8 @@ class _AiChatDialogState extends State<AiChatDialog> {
                   Text(
                     device.subjectName,
                     style: TextStyle(
-                      color: isSelected ? _experience.accent : AppColors.textMain,
+                      color:
+                          isSelected ? _experience.accent : AppColors.textMain,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -546,15 +544,39 @@ class _AiChatDialogState extends State<AiChatDialog> {
     return '语音服务未就绪，请确认后端已启动且 DASHSCOPE_API_KEY 已配置';
   }
 
+  Future<void> _sendDemoVoiceFallback() async {
+    final selectedMacs = _orderedSelectedMacs();
+    if (selectedMacs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_experience.missingDeviceHint)),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('语音服务未配置，已切换为演示语音问答')),
+    );
+    await context.read<AgentProvider>().sendMessage(
+          _experience.presetPrompts.first,
+          deviceMac: selectedMacs.first,
+          deviceMacs: selectedMacs,
+          role: _experience.apiRole,
+        );
+    _scrollToBottom();
+  }
+
   Widget _buildVoiceQuickEntry(VoiceProvider voiceProvider) {
     final isAvailable = voiceProvider.isVoiceAvailable;
+    final useDemoFallback = widget.isElder && !isAvailable;
     final helperText = voiceProvider.isRecording
         ? '正在听您说话，松开后自动发送'
         : (voiceProvider.isProcessing
             ? '正在识别并整理问题...'
             : isAvailable
                 ? '长按大按钮直接说话'
-                : _buildVoiceUnavailableText());
+                : (useDemoFallback
+                    ? '语音服务未配置，点击麦克风可使用演示语音问答'
+                    : _buildVoiceUnavailableText()));
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
@@ -575,9 +597,8 @@ class _AiChatDialogState extends State<AiChatDialog> {
             helperText,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: voiceProvider.isRecording
-                  ? _experience.accent
-                  : Colors.white,
+              color:
+                  voiceProvider.isRecording ? _experience.accent : Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w700,
               height: 1.4,
@@ -585,12 +606,13 @@ class _AiChatDialogState extends State<AiChatDialog> {
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onLongPressStart: isAvailable
-                ? (_) => voiceProvider.startRecording()
-                : null,
+            onTap: useDemoFallback ? _sendDemoVoiceFallback : null,
+            onLongPressStart:
+                isAvailable ? (_) => voiceProvider.startRecording() : null,
             onLongPressEnd: isAvailable
                 ? (_) async {
-                    final path = await voiceProvider.stopRecording(processOmni: false);
+                    final path =
+                        await voiceProvider.stopRecording(processOmni: false);
                     if (!mounted) {
                       return;
                     }
@@ -604,7 +626,9 @@ class _AiChatDialogState extends State<AiChatDialog> {
                       );
                       return;
                     }
-                    await context.read<AgentProvider>().sendVoiceMessageFromPath(
+                    await context
+                        .read<AgentProvider>()
+                        .sendVoiceMessageFromPath(
                           path,
                           deviceMac: selectedMacs.first,
                           role: _experience.apiRole,
@@ -618,11 +642,16 @@ class _AiChatDialogState extends State<AiChatDialog> {
               height: 92,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isAvailable ? _experience.accent : Colors.white10,
-                boxShadow: isAvailable
+                color: isAvailable
+                    ? _experience.accent
+                    : (useDemoFallback
+                        ? const Color(0xFF334155)
+                        : Colors.white10),
+                boxShadow: (isAvailable || useDemoFallback)
                     ? <BoxShadow>[
                         BoxShadow(
-                          color: _experience.accent.withValues(alpha: 0.28),
+                          color: _experience.accent
+                              .withValues(alpha: isAvailable ? 0.28 : 0.16),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
@@ -632,7 +661,9 @@ class _AiChatDialogState extends State<AiChatDialog> {
               child: Icon(
                 voiceProvider.isProcessing ? Icons.graphic_eq : Icons.mic,
                 size: 42,
-                color: isAvailable ? Colors.white : Colors.white54,
+                color: (isAvailable || useDemoFallback)
+                    ? Colors.white
+                    : Colors.white54,
               ),
             ),
           ),
@@ -653,9 +684,10 @@ class _AiChatDialogState extends State<AiChatDialog> {
         children: <Widget>[
           Expanded(
             child: TextField(
-               controller: _textController,
+              controller: _textController,
               focusNode: _focusNode,
-              style: const TextStyle(color: AppColors.textMain, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: AppColors.textMain, fontWeight: FontWeight.bold),
               minLines: 1,
               maxLines: 4,
               decoration: InputDecoration(

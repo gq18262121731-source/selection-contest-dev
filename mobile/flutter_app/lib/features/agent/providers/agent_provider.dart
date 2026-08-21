@@ -21,7 +21,8 @@ class AgentProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<AgentMessage> get messages => _messages;
 
-  void updateDependencies(AgentRepository repository, AudioService audioService) {
+  void updateDependencies(
+      AgentRepository repository, AudioService audioService) {
     _repository = repository;
     _audioService = audioService;
   }
@@ -119,32 +120,81 @@ class AgentProvider extends ChangeNotifier {
     _messages.add(assistantMessage);
     notifyListeners();
 
+    var streamingAudioStarted = false;
+    var streamingAudioUnavailable = false;
     try {
-      final omniResponse = await _repository.analyzeOmniMessage(
-        audioBytes,
-        deviceMac,
-        role: role,
-      );
+      AgentOmniResponse? audioResponse;
+      AgentOmniResponse? completedResponse;
 
       _status = AgentStatus.streaming;
       notifyListeners();
 
-      await for (final delta in _repository.syntheticChunks(omniResponse.text)) {
-        assistantMessage.content += delta;
-        notifyListeners();
+      await for (final event in _repository.streamOmniMessage(
+        audioBytes,
+        deviceMac,
+        role: role,
+      )) {
+        switch (event.type) {
+          case AgentOmniStreamEventType.delta:
+            assistantMessage.content += event.delta;
+            notifyListeners();
+            break;
+          case AgentOmniStreamEventType.audioDelta:
+            if (!streamingAudioStarted && !streamingAudioUnavailable) {
+              streamingAudioStarted = await _audioService.startPcmStream(
+                sampleRate: event.sampleRate,
+                channels: event.channels,
+                encoding: event.encoding,
+              );
+              streamingAudioUnavailable = !streamingAudioStarted;
+            }
+            if (streamingAudioStarted) {
+              final accepted =
+                  await _audioService.writePcmBase64Chunk(event.delta);
+              if (!accepted) {
+                await _audioService.abortPcmStream();
+                streamingAudioStarted = false;
+                streamingAudioUnavailable = true;
+              }
+            }
+            break;
+          case AgentOmniStreamEventType.audioCompleted:
+            audioResponse = event.response;
+            break;
+          case AgentOmniStreamEventType.completed:
+            completedResponse = event.response;
+            if (assistantMessage.content.trim().isEmpty &&
+                completedResponse != null &&
+                completedResponse.text.trim().isNotEmpty) {
+              assistantMessage.content = completedResponse.text;
+              notifyListeners();
+            }
+            break;
+        }
       }
 
-      if (omniResponse.audioBase64.trim().isNotEmpty) {
+      if (assistantMessage.content.trim().isEmpty) {
+        throw Exception('语音服务未返回文字回复');
+      }
+
+      if (streamingAudioStarted) {
+        await _audioService.finishPcmStream();
+      } else if (audioResponse != null &&
+          audioResponse.audioBase64.trim().isNotEmpty) {
         await _audioService.playBase64(
-          omniResponse.audioBase64,
-          omniResponse.audioFormat,
+          audioResponse.audioBase64,
+          audioResponse.audioFormat,
         );
-      } else if (omniResponse.audioUrl.trim().isNotEmpty) {
-        await _audioService.play(omniResponse.audioUrl);
+      } else if (audioResponse != null &&
+          audioResponse.audioUrl.trim().isNotEmpty) {
+        await _audioService.play(audioResponse.audioUrl);
       }
 
       _status = AgentStatus.loaded;
     } catch (error) {
+      if (streamingAudioStarted) {
+        await _audioService.abortPcmStream();
+      }
       final message = error.toString().replaceFirst('Exception: ', '').trim();
       _errorMessage = message.isEmpty ? '语音分析失败，请稍后再试。' : message;
       _status = AgentStatus.error;

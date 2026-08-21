@@ -32,6 +32,37 @@ class AlarmProvider extends ChangeNotifier {
   List<MobilePushRecord> get pushes => _pushes;
   String? get errorMessage => _errorMessage;
 
+  void injectDemoSosAlarm({
+    String? deviceMac,
+    String? subjectName,
+  }) {
+    final normalizedMac = deviceMac?.trim();
+    final normalizedName = subjectName?.trim();
+    final now = DateTime.now();
+    final alarm = AlarmRecord(
+      id: 'demo-sos-${now.microsecondsSinceEpoch}',
+      deviceMac:
+          normalizedMac?.isNotEmpty == true ? normalizedMac! : 'DEMO-SOS',
+      alarmType: 'sos',
+      alarmLevel: 'sos',
+      alarmPriority: 1,
+      message: normalizedName?.isNotEmpty == true
+          ? '$normalizedName 触发了 SOS 紧急求助，请立即确认情况。'
+          : '演示 SOS 紧急求助已触发，请立即确认情况。',
+      createdAt: now.toUtc().toIso8601String(),
+      acknowledged: false,
+      anomalyProbability: 1.0,
+    );
+
+    _started = true;
+    _status = AlarmLoadStatus.loaded;
+    _errorMessage = null;
+    _alarms.insert(0, alarm);
+    _queue.insert(0, AlarmQueueItem(score: 100, alarm: alarm));
+    _sortAlarms();
+    notifyListeners();
+  }
+
   Future<void> ensureStarted() async {
     if (_started && _channel != null) {
       return;
@@ -157,14 +188,25 @@ class AlarmProvider extends ChangeNotifier {
 
   void _sortAlarms() {
     _alarms.sort((a, b) {
-      final aTime = a.createdAtDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime = b.createdAtDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aTime =
+          a.createdAtDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime =
+          b.createdAtDateTime ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
   }
 
   Future<void> acknowledge(String alarmId) async {
     final index = _alarms.indexWhere((a) => a.id == alarmId);
+    if (alarmId.startsWith('demo-sos-')) {
+      if (index != -1) {
+        _alarms[index].acknowledged = true;
+      }
+      _queue.removeWhere((item) => item.alarm.id == alarmId);
+      notifyListeners();
+      return;
+    }
+
     bool previousAcknowledged = false;
     if (index != -1) {
       previousAcknowledged = _alarms[index].acknowledged;

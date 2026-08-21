@@ -177,3 +177,58 @@ CREATE TABLE IF NOT EXISTS sensor_daily_rollups (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (device_mac, bucket_start)
 );
+
+CREATE TABLE IF NOT EXISTS robot_tasks (
+    task_id VARCHAR(160) PRIMARY KEY,
+    gateway_task_id VARCHAR(160),
+    source_event_id VARCHAR(200) NOT NULL UNIQUE,
+    trace_id VARCHAR(160) NOT NULL,
+    alarm_event_id UUID REFERENCES alert_events(id),
+    elder_id VARCHAR(120) NOT NULL DEFAULT '',
+    elder_name VARCHAR(120) NOT NULL DEFAULT '',
+    robot_id VARCHAR(120),
+    task_type VARCHAR(80) NOT NULL DEFAULT 'confirm_fall',
+    location TEXT NOT NULL DEFAULT 'unknown',
+    risk_level VARCHAR(40) NOT NULL DEFAULT 'unknown',
+    status VARCHAR(32) NOT NULL,
+    current_step VARCHAR(40) NOT NULL,
+    outcome VARCHAR(32),
+    last_sequence INTEGER NOT NULL DEFAULT 0,
+    error_code VARCHAR(120),
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_robot_tasks_status_created ON robot_tasks(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_robot_tasks_gateway_task_id ON robot_tasks(gateway_task_id);
+
+CREATE TABLE IF NOT EXISTS robot_task_timeline (
+    id BIGSERIAL PRIMARY KEY,
+    task_id VARCHAR(160) NOT NULL REFERENCES robot_tasks(task_id),
+    callback_id VARCHAR(160) UNIQUE,
+    sequence INTEGER NOT NULL DEFAULT 0,
+    status VARCHAR(32) NOT NULL,
+    step VARCHAR(40) NOT NULL,
+    message TEXT NOT NULL DEFAULT '',
+    occurred_at TIMESTAMPTZ NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_robot_timeline_task_sequence ON robot_task_timeline(task_id, sequence ASC);
+
+CREATE TABLE IF NOT EXISTS robot_observations (
+    id BIGSERIAL PRIMARY KEY,
+    task_id VARCHAR(160) NOT NULL UNIQUE REFERENCES robot_tasks(task_id),
+    snapshot_url TEXT,
+    camera_available BOOLEAN,
+    voice_available BOOLEAN,
+    response_type VARCHAR(32),
+    transcript TEXT,
+    observed_at TIMESTAMPTZ NOT NULL,
+    raw_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

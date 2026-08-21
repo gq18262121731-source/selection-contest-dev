@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 
 from backend.config import get_settings
+import backend.dependencies as dependencies
 from backend.dependencies import get_video_bridge_service
 from backend.models.alarm_model import AlarmType
 from backend.models.video_bridge_model import VideoBridgeFallEventRequest
@@ -15,8 +16,26 @@ def test_video_bridge_push_creates_alarm() -> None:
     settings = get_settings()
     runtime_config_path = Path(settings.data_dir) / "video_bridge_runtime_config.json"
     original_runtime_payload = runtime_config_path.read_text(encoding="utf-8") if runtime_config_path.exists() else None
+    original_robot_gateway = dependencies._robot_gateway_service
+
+    class _FakeRobotGateway:
+        base_url = settings.robot_gateway_base_url.rstrip("/")
+        enabled = True
+        timeout_seconds = settings.robot_gateway_timeout_seconds
+
+        async def submit_fall_confirmation_async(self, *, event, alarm):
+            return {
+                "ok": True,
+                "status": "ok",
+                "base_url": "http://unitree-go.test",
+                "endpoint": "/api/robot/events/fall",
+                "status_code": 200,
+                "data": {"success": True, "data": {"taskId": "task_robot_001"}},
+                "error": None,
+            }
 
     try:
+        dependencies._robot_gateway_service = _FakeRobotGateway()
         runtime_config = service.update_runtime_config(
             {
                 "base_url": "http://127.0.0.1:8000",
@@ -69,8 +88,11 @@ def test_video_bridge_push_creates_alarm() -> None:
         assert alarm.metadata["event"]["camera_id"] == "camera_01"
         assert alarm.metadata["event"]["fall_score"] == 0.93
         assert alarm.metadata["event"]["fall_prob"] == 0.93
+        assert alarm.metadata["robot_task"]["ok"] is True
+        assert alarm.metadata["robot_task"]["data"]["data"]["taskId"] == "task_robot_001"
         assert settings.fall_detection_target_elder_id == "elder_demo_01"
     finally:
+        dependencies._robot_gateway_service = original_robot_gateway
         if original_runtime_payload is None:
             runtime_config_path.unlink(missing_ok=True)
         else:

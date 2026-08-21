@@ -21,8 +21,16 @@ from backend.api.camera_source_api import router as camera_source_router
 from backend.api.chat_api import router as chat_router
 from backend.api.device_api import router as device_router
 from backend.api.health_api import router as health_router
+from backend.api.health_insight_api import router as health_insight_router
+from backend.api.go2_companion_api import router as go2_companion_router
 from backend.api.model_finetune_api import router as model_finetune_router
 from backend.api.relation_api import router as relation_router
+from backend.api.robot_api import router as robot_router
+from backend.api.robot_companion_api import router as robot_companion_router
+from backend.api.robot_navigation_api import router as robot_navigation_router
+from backend.api.robot_emergency_api import router as robot_emergency_router
+from backend.api.robot_navigation_ws import router as robot_navigation_ws_router
+from backend.api.robot_point_cloud_ws import router as robot_point_cloud_ws_router
 from backend.api.target_user_api import router as target_user_router
 from backend.api.user_api import router as user_router
 from backend.api.video_bridge_api import router as video_bridge_router
@@ -31,6 +39,7 @@ from backend.api.voice_api import router as voice_router
 from backend.api.omni_api import router as omni_router
 from backend.config import get_settings
 from backend.models.device_model import DeviceIngestMode, DeviceStatus
+from backend.serial_runtime_lock import SerialRuntimeLock, SerialRuntimeLockError
 from backend.dependencies import (
     ensure_demo_overlay_history_window,
     get_alarm_service,
@@ -45,6 +54,7 @@ from backend.dependencies import (
     get_parser,
     get_settings_dependency,
     get_websocket_manager,
+    shutdown_robot_navigation_components,
     ingest_sample,
     publish_next_demo_overlay_sample,
     refresh_demo_overlay_samples,
@@ -107,6 +117,8 @@ async def lifespan(app: FastAPI):
     finally:
         with suppress(Exception):
             await get_camera_audio_hub().shutdown()
+        with suppress(Exception):
+            await shutdown_robot_navigation_components()
         for task in tasks:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -132,8 +144,16 @@ app.add_middleware(
 app.include_router(device_router, prefix=settings.api_v1_prefix)
 app.include_router(user_router, prefix=settings.api_v1_prefix)
 app.include_router(relation_router, prefix=settings.api_v1_prefix)
+app.include_router(robot_router, prefix=settings.api_v1_prefix)
+app.include_router(robot_companion_router, prefix=settings.api_v1_prefix)
+app.include_router(go2_companion_router, prefix=settings.api_v1_prefix)
+app.include_router(robot_navigation_router, prefix=settings.api_v1_prefix)
+app.include_router(robot_emergency_router, prefix=settings.api_v1_prefix)
+app.include_router(robot_navigation_ws_router)
+app.include_router(robot_point_cloud_ws_router)
 app.include_router(target_user_router, prefix=settings.api_v1_prefix)
 app.include_router(health_router, prefix=settings.api_v1_prefix)
+app.include_router(health_insight_router, prefix=settings.api_v1_prefix)
 app.include_router(alarm_router, prefix=settings.api_v1_prefix)
 app.include_router(agent_router, prefix=settings.api_v1_prefix)
 app.include_router(chat_router, prefix=settings.api_v1_prefix)
@@ -224,6 +244,11 @@ async def system_info() -> dict[str, object]:
             "poll_enabled": cfg.vision_service_poll_enabled,
             "poll_hz": cfg.vision_service_poll_hz,
             "timeout_seconds": cfg.vision_service_timeout_seconds,
+        },
+        "robot_runtime": {
+            "enabled": cfg.robot_gateway_enabled,
+            "base_url": cfg.robot_gateway_base_url,
+            "timeout_seconds": cfg.robot_gateway_timeout_seconds,
         },
         "fall_runtime": {
             "enabled": cfg.fall_detection_enabled,
@@ -368,6 +393,7 @@ async def _demo_overlay_stream_loop() -> None:
 async def _serial_stream_loop() -> None:
     loop = asyncio.get_running_loop()
     reader = SerialGatewayReader(get_parser())
+    lock_path = settings.data_dir / "serial_runtime.lock"
 
     def publish_from_thread(sample):
         _serial_logger.info(
@@ -399,26 +425,33 @@ async def _serial_stream_loop() -> None:
                 _serial_logger.error("Ingest failed for %s: %s", sample.device_mac, exc)
         future.add_done_callback(_on_done)
 
-    await asyncio.to_thread(
-        reader.run,
-        port=settings.serial_port or None,
-        baudrate=settings.serial_baudrate,
-        collection_strategy=settings.serial_collection_strategy,
-        packet_type=settings.serial_packet_type,
-        mac_filter=settings.serial_mac_filter,
-        detection_keywords=settings.serial_detection_keywords,
-        fallback_device_mac=settings.serial_fallback_device_mac or None,
-        auto_configure=settings.serial_auto_configure,
-        disable_uuid_output=settings.serial_disable_uuid_output,
-        apply_mac_filter=settings.serial_apply_mac_filter,
-        apply_packet_type=settings.serial_apply_packet_type,
-        enable_broadcast_sos_overlay=settings.serial_enable_broadcast_sos_overlay,
-        response_cycle_seconds=settings.serial_response_cycle_seconds,
-        broadcast_cycle_seconds=settings.serial_broadcast_cycle_seconds,
-        command_delay_seconds=settings.serial_command_delay_seconds,
-        target_mac_provider=lambda: get_device_service().get_active_serial_target_mac(),
-        on_sample=publish_from_thread,
-    )
+    while True:
+        try:
+            with SerialRuntimeLock(lock_path):
+                _serial_logger.info("Serial runtime lock acquired: %s", lock_path)
+                await asyncio.to_thread(
+                    reader.run,
+                    port=settings.serial_port or None,
+                    baudrate=settings.serial_baudrate,
+                    collection_strategy=settings.serial_collection_strategy,
+                    packet_type=settings.serial_packet_type,
+                    mac_filter=settings.serial_mac_filter,
+                    detection_keywords=settings.serial_detection_keywords,
+                    fallback_device_mac=settings.serial_fallback_device_mac or None,
+                    auto_configure=settings.serial_auto_configure,
+                    disable_uuid_output=settings.serial_disable_uuid_output,
+                    apply_mac_filter=settings.serial_apply_mac_filter,
+                    apply_packet_type=settings.serial_apply_packet_type,
+                    enable_broadcast_sos_overlay=settings.serial_enable_broadcast_sos_overlay,
+                    response_cycle_seconds=settings.serial_response_cycle_seconds,
+                    broadcast_cycle_seconds=settings.serial_broadcast_cycle_seconds,
+                    command_delay_seconds=settings.serial_command_delay_seconds,
+                    target_mac_provider=lambda: get_device_service().get_active_serial_target_mac(),
+                    on_sample=publish_from_thread,
+                )
+        except SerialRuntimeLockError as exc:
+            _serial_logger.warning("%s; serial collection is paused in this backend process.", exc)
+            await asyncio.sleep(5.0)
 
 
 async def _mqtt_stream_loop() -> None:

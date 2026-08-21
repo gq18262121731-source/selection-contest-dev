@@ -46,6 +46,7 @@ backend/tmp_x.txt
 *.bak
 
 # Model weights and generated artifacts
+artifacts/
 *.pt
 *.pth
 *.onnx

@@ -69,6 +69,29 @@ class AlarmService:
             alarms = [alarm for alarm in alarms if not alarm.acknowledged]
         return [normalize_fall_alarm_record(alarm) for alarm in alarms]
 
+    def get_alarm(self, alarm_id: str) -> AlarmRecord | None:
+        for alarm in self._alarms:
+            if alarm.id == alarm_id:
+                return normalize_fall_alarm_record(alarm)
+        return None
+
+    def update_alarm_record(self, alarm: AlarmRecord) -> AlarmRecord:
+        normalized = normalize_fall_alarm_record(alarm)
+        for index, existing in enumerate(self._alarms):
+            if existing.id == normalized.id:
+                escalated = normalized.alarm_level.value < existing.alarm_level.value
+                self._alarms[index] = normalized
+                self._queue.remove(normalized.id)
+                if not normalized.acknowledged:
+                    self._queue.enqueue(normalized)
+                    if escalated:
+                        self._notification_service.dispatch_mobile_push(normalized)
+                return normalized
+        self._alarms.append(normalized)
+        if not normalized.acknowledged:
+            self._queue.enqueue(normalized)
+        return normalized
+
     def queue_items(self, active_only: bool = True) -> list[AlarmQueueItem]:
         return [
             item.model_copy(update={"alarm": normalize_fall_alarm_record(item.alarm)})

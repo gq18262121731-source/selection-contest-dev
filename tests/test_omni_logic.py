@@ -116,6 +116,49 @@ def test_omni_chat_aggregates_text_and_wraps_pcm_audio(monkeypatch) -> None:
         assert wav_file.readframes(wav_file.getnframes()) == pcm_bytes
 
 
+def test_omni_chat_stream_yields_text_deltas_before_completed_audio(monkeypatch) -> None:
+    pcm_bytes = b"\x00\x00\x01\x00"
+    pcm_b64 = base64.b64encode(pcm_bytes).decode("ascii")
+    fake_client = _FakeClient(
+        [
+            _fake_chunk(text="您好，", audio_data=pcm_b64[:4]),
+            _fake_chunk(text="请慢慢起身。", audio_data=pcm_b64[4:]),
+        ]
+    )
+    settings = get_settings().model_copy(
+        update={
+            "dashscope_api_key_env": "test-key",
+            "qwen_omni_model": "qwen2.5-omni-7b",
+        }
+    )
+    service = VoiceService(settings)
+    monkeypatch.setattr(service, "_build_compatible_client", lambda: fake_client)
+
+    events = list(
+        service.omni_chat_stream(
+            b"fake wav bytes",
+            fmt="wav",
+            role="elder",
+        )
+    )
+
+    assert [event["type"] for event in events] == [
+        "answer.delta",
+        "audio.delta",
+        "answer.delta",
+        "audio.delta",
+        "audio.completed",
+        "answer.completed",
+    ]
+    assert events[0]["delta"] == "您好，"
+    assert events[1]["encoding"] == "pcm_s16le"
+    assert events[1]["sample_rate"] == 24000
+    assert events[1]["channels"] == 1
+    assert events[2]["delta"] == "请慢慢起身。"
+    assert events[4]["fmt"] == "wav"
+    assert events[5]["answer"] == "您好，请慢慢起身。"
+
+
 def test_omni_chat_uses_text_only_output_for_non_elder(monkeypatch) -> None:
     fake_client = _FakeClient([_fake_chunk(text="已收到。")])
     settings = get_settings().model_copy(

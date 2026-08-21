@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from "vue";
+import { defineAsyncComponent, onMounted, onUnmounted, watch } from "vue";
 import AppShell from "./components/layout/AppShell.vue";
 import { useHashRouting } from "./composables/useHashRouting";
 import { useSessionAuth } from "./composables/useSessionAuth";
 import AccessDeniedPage from "./views/AccessDeniedPage.vue";
 import CommunityAgentPage from "./views/CommunityAgentPage.vue";
 import CommunityPage from "./views/CommunityPage.vue";
-import CommunityTopologyPage from "./views/CommunityTopologyPage.vue";
 import DebugPage from "./views/DebugPage.vue";
 import FamilyPage from "./views/FamilyPage.vue";
 import LoginPage from "./views/LoginPage.vue";
 import MemberDevicePage from "./views/MemberDevicePage.vue";
+import RobotFollowPage from "./views/RobotFollowPage.vue";
+import RobotStatusPage from "./views/RobotStatusPage.vue";
+import RobotTaskCenterPage from "./views/RobotTaskCenterPage.vue";
+
+const RobotNavigationPage = defineAsyncComponent(() => import("./views/RobotNavigationPage.vue"));
+const RobotEmergencyPage = defineAsyncComponent(() => import("./views/RobotEmergencyPage.vue"));
+const Go2CompanionPage = defineAsyncComponent(() => import("./views/Go2CompanionPage.vue"));
 
 const {
   authError,
@@ -26,12 +32,14 @@ const {
 
 const {
   activePage,
+  activeIncidentId,
   allowedPages,
   canAccessDebug,
   disposeHashRouting,
   initHashRouting,
   resetToDefaultPage,
   routeTo,
+  routeToEmergency,
   routeToNonce,
 } = useHashRouting(sessionUser);
 
@@ -101,11 +109,12 @@ onUnmounted(() => {
   <AppShell
     v-else-if="sessionUser"
     :session-user="sessionUser"
-    :active-page="activePage"
+    :active-page="activePage === 'report' ? 'agent' : activePage"
     :allowed-pages="allowedPages"
     :can-access-debug="canAccessDebug"
     @logout="logout"
     @navigate="routeTo"
+    @open-emergency="routeToEmergency"
   >
     <DebugPage
       v-if="activePage === 'debug'"
@@ -119,14 +128,10 @@ onUnmounted(() => {
       :can-access-debug="canAccessDebug"
     />
 
-    <CommunityTopologyPage
-      v-else-if="activePage === 'topology'"
-      :session-user="sessionUser"
-    />
-
     <CommunityAgentPage
-      v-else-if="activePage === 'agent'"
+      v-else-if="activePage === 'agent' || activePage === 'report'"
       :session-user="sessionUser"
+      :initial-report-open="activePage === 'report'"
       :refresh-key="routeToNonce"
     />
 
@@ -139,6 +144,23 @@ onUnmounted(() => {
       v-else-if="activePage === 'members'"
       :session-user="sessionUser"
     />
+
+    <Go2CompanionPage v-else-if="activePage === 'companion'" />
+
+    <RobotTaskCenterPage v-else-if="activePage === 'robot-tasks'" />
+
+    <RobotStatusPage v-else-if="activePage === 'robot-status'" />
+
+    <RobotNavigationPage v-else-if="activePage === 'robot-navigation'" />
+
+    <RobotEmergencyPage
+      v-else-if="activePage === 'robot-emergency'"
+      :key="activeIncidentId ?? 'invalid'"
+      :incident-id="activeIncidentId"
+      :session-user="sessionUser"
+    />
+
+    <RobotFollowPage v-else-if="activePage === 'robot-follow'" />
 
     <AccessDeniedPage v-else />
   </AppShell>

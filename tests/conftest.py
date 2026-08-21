@@ -3,27 +3,21 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import joblib
-import numpy as np
-import pandas as pd
 import pytest
-import torch
-from sklearn.preprocessing import StandardScaler
 
 from backend.config import get_settings
-from backend.ml.feature_engineering import FEATURE_COLUMNS
-from backend.ml.inference import HealthInferenceEngine
-from backend.models.static_health_model import StaticHealthMultiTaskModel
-from backend.repositories.score_repo import ScoreRepository
-from backend.repositories.warning_repo import WarningRepository
-from backend.repositories.wearable_repo import WearableRepository
-from backend.services.explanation_service import ExplanationService
-from backend.services.health_score_service import HealthScoreService
-from backend.services.health_stability_service import HealthStabilityService
-from backend.services.warning_service import WarningService
 
 
 def _write_test_artifacts(base_dir: Path) -> tuple[str, str, str]:
+    import joblib
+    import numpy as np
+    import pandas as pd
+    import torch
+    from sklearn.preprocessing import StandardScaler
+
+    from backend.ml.feature_engineering import FEATURE_COLUMNS
+    from backend.models.static_health_model import StaticHealthMultiTaskModel
+
     artifact_dir = base_dir / "artifacts" / "static_health"
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -50,6 +44,15 @@ def _write_test_artifacts(base_dir: Path) -> tuple[str, str, str]:
 
 @pytest.fixture()
 def test_services(tmp_path: Path) -> dict[str, object]:
+    from backend.ml.inference import HealthInferenceEngine
+    from backend.repositories.score_repo import ScoreRepository
+    from backend.repositories.warning_repo import WarningRepository
+    from backend.repositories.wearable_repo import WearableRepository
+    from backend.services.explanation_service import ExplanationService
+    from backend.services.health_score_service import HealthScoreService
+    from backend.services.health_stability_service import HealthStabilityService
+    from backend.services.warning_service import WarningService
+
     model_path, scaler_path, feature_columns_path = _write_test_artifacts(tmp_path)
     settings = get_settings().model_copy(
         update={

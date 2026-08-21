@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, toRef, ref } from "vue";
+import { computed, toRef, ref, watch } from "vue";
 import { AlertTriangle } from "lucide-vue-next";
 
 import type { SessionUser } from "../api/client";
-import CommunityHandoverReport from "../components/CommunityHandoverReport.vue";
 import CommunityDeviceInspector from "../components/CommunityDeviceInspector.vue";
 import CommunityDeviceRail from "../components/CommunityDeviceRail.vue";
 import CommunityRealtimeVitalsPanel from "../components/CommunityRealtimeVitalsPanel.vue";
+import HealthScoreInsightCard from "../components/health/HealthScoreInsightCard.vue";
 import PageHeader from "../components/layout/PageHeader.vue";
 import { useCommunityWorkspace } from "../composables/useCommunityWorkspace";
 
@@ -17,6 +17,8 @@ const props = defineProps<{
 
 const workspace = useCommunityWorkspace(toRef(props, "sessionUser"));
 const isSimulating = ref(false);
+const detailView = ref<"monitor" | "inspector">("monitor");
+const showInsight = ref(false);
 
 // 模拟真实的告警数值波动（0-15之间）
 const simulatedAlarmCount = ref(Math.floor(Math.random() * 16));
@@ -42,6 +44,28 @@ const mockDevices = [
   { mac: "AA:BB:CC:DD:EE:02", name: "T10-WATCH-002", elder: "李奶奶" },
   { mac: "AA:BB:CC:DD:EE:03", name: "T10-WATCH-003", elder: "王大妈" },
 ];
+
+function openHealthAnalysis() {
+  detailView.value = "inspector";
+  showInsight.value = false;
+}
+
+function returnToMonitor() {
+  detailView.value = "monitor";
+  showInsight.value = false;
+}
+
+function openInsight() {
+  detailView.value = "inspector";
+  showInsight.value = true;
+}
+
+watch(
+  () => workspace.selectedDeviceMac.value,
+  () => {
+    showInsight.value = false;
+  },
+);
 
 async function triggerSOSSimulation() {
   if (isSimulating.value) return;
@@ -88,6 +112,39 @@ async function triggerSOSSimulation() {
   }
 }
 
+function triggerFallAlertPreview() {
+  const triggeredAt = new Date();
+  const cameraId = "camera_01";
+  const incidentId = `vision-fall-${cameraId}-${triggeredAt.getTime()}`;
+  const selectedElder = workspace.selectedElder.value;
+
+  const mockFallAlarm = {
+    id: `sim_fall_${triggeredAt.getTime()}`,
+    device_mac: selectedElder?.device_mac ?? mockDevices[0].mac,
+    alarm_type: "video_fall",
+    alarm_level: 1,
+    alarm_layer: "vision",
+    message: "检测到疑似跌倒，请立即复核",
+    created_at: triggeredAt.toISOString(),
+    acknowledged: false,
+    anomaly_probability: 0.73,
+    metadata: {
+      elder_name: selectedElder?.elder_name ?? "待人工确认老人",
+      is_demo: true,
+      event: {
+        camera_id: cameraId,
+        status: "fallen_confirmed",
+        risk_level: "critical",
+        fall_score: 0.73,
+        incident_id: incidentId,
+        timestamp: triggeredAt.toISOString(),
+      },
+    },
+  };
+
+  window.dispatchEvent(new CustomEvent("fall-alert-preview", { detail: mockFallAlarm }));
+}
+
 const syncLabel = computed(() =>
   workspace.lastSyncAt.value
     ? workspace.lastSyncAt.value.toLocaleTimeString("zh-CN", { hour12: false })
@@ -126,15 +183,14 @@ const pageMeta = computed(() => [
           刷新数据
         </button>
         
-        <!-- 方案B：低调的模拟告警按钮 -->
+        <!-- 跌倒告警演示入口 -->
         <button 
           v-if="canAccessDebug"
           type="button" 
           class="modern-simulate-alarm-icon-btn"
-          :class="{ 'modern-simulate-alarm-icon-btn--active': isSimulating }"
-          :disabled="isSimulating"
-          :title="isSimulating ? '模拟中...' : '模拟告警（测试）'"
-          @click="triggerSOSSimulation"
+          title="打开跌倒告警"
+          aria-label="打开跌倒告警"
+          @click="triggerFallAlertPreview"
         >
           <AlertTriangle :size="16" />
         </button>
@@ -175,59 +231,38 @@ const pageMeta = computed(() => [
       />
 
       <CommunityRealtimeVitalsPanel
+        v-if="detailView === 'monitor'"
         :elder="workspace.selectedElder.value"
         :device="workspace.selectedDevice.value"
         :current-sample="workspace.selectedMonitorCurrentSample.value"
         :samples="workspace.selectedMonitorSamples.value"
         :awaiting-realtime="workspace.isAwaitingSelectedRealtime.value"
+        @open-health-analysis="openHealthAnalysis"
       />
 
-      <div class="overview-stage__detail-row">
+      <div v-else class="overview-stage__detail-row">
         <CommunityDeviceInspector
+          v-if="detailView === 'inspector'"
+          :elder="workspace.selectedElder.value"
+          :device="workspace.selectedDevice.value"
+          @back="returnToMonitor"
+          @open-insight="openInsight"
+        />
+
+        <HealthScoreInsightCard
+          v-if="showInsight"
           :elder="workspace.selectedElder.value"
           :device="workspace.selectedDevice.value"
         />
-
-        <article class="panel alerts-panel">
-          <div class="alerts-panel__head">
-            <div>
-              <p class="section-eyebrow">最近告警明细</p>
-              <h2>最近告警</h2>
-            </div>
-            <span class="summary-badge">{{ workspace.recentAlerts.value.length }} 条</span>
-          </div>
-
-          <div class="alert-list">
-            <article
-              v-for="item in workspace.recentAlerts.value.slice(0, 6)"
-              :key="item.alarm_id"
-              class="alert-row"
-            >
-              <strong>{{ item.elder_name ?? item.device_mac }}</strong>
-              <small>{{ item.message }}</small>
-              <em>{{ new Date(item.created_at).toLocaleString("zh-CN", { hour12: false }) }}</em>
-            </article>
-            <div v-if="!workspace.recentAlerts.value.length" class="empty-copy">
-              当前没有最近告警。
-            </div>
-          </div>
-        </article>
       </div>
 
-      <CommunityHandoverReport
-        :community-name="workspace.community.value?.name ?? '当前社区'"
-        :device-macs="workspace.deviceStatuses.value.map((item) => item.device_mac)"
-        :device-statuses="workspace.deviceStatuses.value"
-        :recent-alerts="workspace.recentAlerts.value"
-      />
     </div>
   </section>
 </template>
 
 <style scoped>
 .overview-stage,
-.overview-stage__detail-row,
-.alert-list {
+.overview-stage__detail-row {
   display: grid;
   gap: 18px;
 }
@@ -243,46 +278,8 @@ const pageMeta = computed(() => [
 
 .overview-stage__detail-row {
   width: 100%;
-  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
-  align-items: start;
-}
-
-.alerts-panel {
-  display: grid;
-  gap: 16px;
-}
-
-.alerts-panel__head {
-  display: flex;
-  gap: 14px;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.alerts-panel__head h2 {
-  margin: 0;
-  color: var(--text-main);
-  font-family: var(--font-display);
-}
-
-.alert-row {
-  padding: 14px 16px;
-  border-radius: 20px;
-  background: #ffffff;
-  border: 1px solid var(--line-medium);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-  display: grid;
-  gap: 6px;
-}
-
-.alert-row strong {
-  color: var(--text-main);
-}
-
-.alert-row small,
-.alert-row em,
-.empty-copy {
-  color: var(--text-sub);
+  grid-template-columns: 1fr;
+  align-items: stretch;
 }
 
 /* 现代化刷新按钮 */
@@ -472,17 +469,7 @@ const pageMeta = computed(() => [
   }
 }
 
-@media (max-width: 1180px) {
-  .overview-stage__detail-row {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 760px) {
-  .alerts-panel__head {
-    flex-direction: column;
-  }
-  
   .modern-alarm-section {
     justify-content: stretch;
   }

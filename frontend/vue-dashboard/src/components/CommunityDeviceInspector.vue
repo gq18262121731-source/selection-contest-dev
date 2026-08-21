@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { ArrowLeft, Sparkles } from "lucide-vue-next";
 import type { CommunityDashboardDeviceItem, CommunityDashboardElderItem } from "../api/client";
 
 const props = defineProps<{
   elder: CommunityDashboardElderItem | null;
   device: CommunityDashboardDeviceItem | null;
+}>();
+
+const emit = defineEmits<{
+  (event: "back"): void;
+  (event: "open-insight"): void;
 }>();
 
 const structured = computed(() => props.device?.structured_health ?? props.elder?.structured_health ?? null);
@@ -165,9 +171,21 @@ const fallbackReason = computed(() => {
         <h2>{{ summaryMeta.title }}</h2>
         <p class="panel-subtitle">{{ summaryMeta.subtitle }}</p>
       </div>
-      <span class="inspector-panel__score">
-        {{ displayFinalScore?.toFixed(1) ?? "--" }}
-      </span>
+      <div class="inspector-panel__side">
+        <span class="inspector-panel__score">
+          {{ displayFinalScore?.toFixed(1) ?? "--" }}
+        </span>
+        <div class="inspector-panel__actions">
+          <button type="button" class="inspector-action inspector-action--subtle" @click="emit('back')">
+            <ArrowLeft :size="16" />
+            实时监护
+          </button>
+          <button type="button" class="inspector-action inspector-action--primary" @click="emit('open-insight')">
+            <Sparkles :size="16" />
+            智能解读
+          </button>
+        </div>
+      </div>
     </div>
 
     <p v-if="sosSummary" class="inspector-panel__sos-banner">
@@ -180,10 +198,6 @@ const fallbackReason = computed(() => {
         <strong>{{ item.value }}</strong>
       </article>
     </div>
-
-    <p v-if="structured?.score_adjustment_reason" class="inspector-panel__note">
-      {{ structured.score_adjustment_reason }}
-    </p>
 
     <div class="inspector-panel__tags">
       <span v-if="sosSummary" class="signal-chip signal-chip--sos">
@@ -262,6 +276,62 @@ const fallbackReason = computed(() => {
   flex-shrink: 0;
 }
 
+.inspector-panel__side {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.inspector-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.inspector-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.inspector-action:hover {
+  transform: translateY(-1px);
+}
+
+.inspector-action--subtle {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.inspector-action--subtle:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.inspector-action--primary {
+  border: 1px solid #93c5fd;
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+}
+
+.inspector-action--primary:hover {
+  border-color: #2563eb;
+  background: #1d4ed8;
+}
+
 .inspector-panel__sos-banner {
   margin: 0;
   padding: 18px 20px;
@@ -308,17 +378,6 @@ const fallbackReason = computed(() => {
   color: #0f172a;
   font-size: 1.25rem;
   font-weight: 700;
-}
-
-.inspector-panel__note {
-  margin: 0;
-  padding: 16px 20px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  color: #92400e;
-  line-height: 1.7;
-  border: 2px solid #fcd34d;
-  font-size: 0.95rem;
 }
 
 .inspector-panel__tags {
@@ -383,6 +442,15 @@ const fallbackReason = computed(() => {
 
   .inspector-panel__head {
     flex-direction: column;
+  }
+
+  .inspector-panel__side {
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .inspector-panel__actions {
+    justify-content: flex-start;
   }
 
   .inspector-panel__scores {

@@ -9,6 +9,20 @@ from agent.context_assembler import AgentContextAssembler
 from agent.langchain_rag_service import LangChainRAGService
 from agent.langgraph_health_agent import HealthAgentService
 from agent.mcp_adapter import LocalToolAdapter
+from agent.go2_companion.agent import Go2CompanionAgent
+from agent.robot_companion.action_planner import RobotCompanionActionPlanner
+from agent.robot_companion.context_manager import RobotCompanionContextManager
+from agent.robot_companion.robot_agent import (
+    RobotCompanionAgentService,
+    RobotCompanionIntentClassifier,
+)
+from agent.robot_companion.providers.qweather import QWeatherProvider
+from agent.robot_companion.safety_guard import RobotCompanionSafetyGuard
+from agent.robot_companion.tool_registry import (
+    MockLocationProvider,
+    MockRobotStateProvider,
+    MockWeatherProvider,
+)
 from agent.model_interfaces import (
     AgentModelSuite,
     RuleBasedAlarmInterpretationModel,
@@ -30,6 +44,10 @@ from backend.models.user_model import UserRole
 from backend.ml.inference import HealthInferenceEngine
 from backend.repositories.score_repo import ScoreRepository
 from backend.repositories.mobile_push_device_repo import MobilePushDeviceRepository
+from backend.repositories.robot_task_repo import RobotTaskRepository
+from backend.repositories.robot_map_repo import RobotMapRepository
+from backend.repositories.robot_navigation_repo import RobotNavigationRepository
+from backend.repositories.robot_emergency_repo import RobotEmergencyRepository
 from backend.repositories.warning_repo import WarningRepository
 from backend.repositories.wearable_repo import WearableRepository
 from backend.services.alarm_priority_queue import AlarmPriorityQueue
@@ -49,13 +67,31 @@ from backend.services.fall_alarm_contract import (
 )
 from backend.services.health_data_repository import HealthDataRepository
 from backend.services.health_score_service import HealthScoreService as StructuredHealthScoreService
+from backend.services.health_insight_context_service import HealthInsightContextService
+from backend.services.health_llm_insight_service import HealthLlmInsightService
 from backend.services.health_stability_service import HealthStabilityService
+from backend.services.go2_companion_dialogue_service import Go2CompanionDialogueService
+from backend.services.go2_companion_voice_service import Go2CompanionVoiceService
 from backend.services.model_finetune_service import ModelFinetuneService
 from backend.services.notification_service import NotificationService
 from backend.services.optional_reid_embedding_service import OptionalReidEmbeddingService
 from backend.services.posture_event_service import PostureEventService
 from backend.services.posture_knowledge_service import PostureKnowledgeService
+from backend.services.qwen_file_asr_service import QwenFileAsrService
 from backend.services.relation_service import RelationService
+from backend.services.robot_gateway_service import RobotGatewayService
+from backend.services.robot_risk_fusion_service import RobotRiskFusionService
+from backend.services.robot_task_service import RobotTaskService
+from backend.services.robot_map_service import RobotMapService
+from backend.services.robot_navigation_service import RobotNavigationService
+from backend.services.robot_emergency_service import RobotEmergencyService
+from backend.services.robot_safety_interlock_service import RobotSafetyInterlockService
+from backend.services.robot_navigation_gateway_service import RobotNavigationGatewayService
+from backend.services.robot_navigation_event_hub import RobotNavigationEventHub
+from backend.services.robot_navigation_ws_proxy_service import RobotNavigationWsProxyService
+from backend.services.robot_navigation_application_service import RobotNavigationApplicationService
+from backend.services.robot_point_cloud_hub import RobotPointCloudHub
+from backend.services.robot_point_cloud_ws_proxy_service import RobotPointCloudWsProxyService
 from backend.services.stream_service import StreamService
 from backend.services.external_camera_bridge_service import ExternalCameraBridgeService
 from backend.services.fall_frame_test_service import FallFrameTestService
@@ -69,6 +105,7 @@ from backend.services.video_bridge_service import VideoBridgeService
 from backend.services.vision_service_client import VisionServiceClient
 from backend.services.warning_service import WarningService
 from backend.services.websocket_manager import WebSocketManager
+from backend.services.voice_service import VoiceService
 from backend.schemas.health import VitalSignsPayload
 from iot.parser import T10PacketParser
 
@@ -98,6 +135,13 @@ _baseline_tracker = BaselineTracker()
 _health_score_service = DemoHealthScoreService(floor=_settings.health_score_floor)
 _community_clusterer = CommunityHealthClusterer()
 _intelligent_scorer = IntelligentAnomalyScorer()
+_health_insight_context_service: HealthInsightContextService | None = None
+_health_llm_insight_service: HealthLlmInsightService | None = None
+_robot_companion_service: RobotCompanionAgentService | None = None
+_robot_companion_context_manager: RobotCompanionContextManager | None = None
+_go2_companion_agent: Go2CompanionAgent | None = None
+_go2_companion_dialogue_service: Go2CompanionDialogueService | None = None
+_go2_companion_voice_service: Go2CompanionVoiceService | None = None
 _data_generator = SyntheticHealthDataGenerator(
     device_count=_settings.mock_device_count,
     mac_prefix=(_settings.allowed_mac_prefixes[0] if _settings.allowed_mac_prefixes else _settings.mock_device_mac_prefix),
@@ -180,6 +224,23 @@ _target_user_fall_service: TargetUserFallService | None = None
 _external_camera_bridge_service: ExternalCameraBridgeService | None = None
 _video_bridge_service: VideoBridgeService | None = None
 _vision_service_client: VisionServiceClient | None = None
+_robot_gateway_service: RobotGatewayService | None = None
+_robot_task_repository: RobotTaskRepository | None = None
+_robot_risk_fusion_service: RobotRiskFusionService | None = None
+_robot_task_service: RobotTaskService | None = None
+_robot_map_repository: RobotMapRepository | None = None
+_robot_navigation_repository: RobotNavigationRepository | None = None
+_robot_emergency_repository: RobotEmergencyRepository | None = None
+_robot_map_service: RobotMapService | None = None
+_robot_safety_interlock_service: RobotSafetyInterlockService | None = None
+_robot_navigation_gateway_service: RobotNavigationGatewayService | None = None
+_robot_navigation_service: RobotNavigationService | None = None
+_robot_emergency_service: RobotEmergencyService | None = None
+_robot_navigation_event_hub: RobotNavigationEventHub | None = None
+_robot_navigation_ws_proxy_service: RobotNavigationWsProxyService | None = None
+_robot_navigation_application_service: RobotNavigationApplicationService | None = None
+_robot_point_cloud_hub: RobotPointCloudHub | None = None
+_robot_point_cloud_ws_proxy_service: RobotPointCloudWsProxyService | None = None
 _model_finetune_service: ModelFinetuneService | None = None
 _camera_frame_hub: CameraFrameHub | None = None
 _camera_detection_frame_hub: CameraDetectionFrameHub | None = None
@@ -375,6 +436,85 @@ def get_agent_service() -> HealthAgentService:
     return _agent_service
 
 
+def _build_robot_companion_weather_provider():
+    fallback = MockWeatherProvider()
+    if _settings.weather_provider != "qweather":
+        return fallback
+    if not _settings.qweather_configured:
+        logger.warning(
+            "WEATHER_PROVIDER=qweather but QWeather configuration is incomplete; using Mock weather"
+        )
+        return fallback
+    try:
+        return QWeatherProvider(
+            api_key=_settings.qweather_api_key,
+            api_host=_settings.qweather_api_host,
+            location_code=_settings.qweather_location,
+            timeout_seconds=_settings.qweather_timeout_seconds,
+            fallback=fallback,
+        )
+    except ValueError as exc:
+        logger.warning("Invalid QWeather configuration; using Mock weather: %s", exc)
+        return fallback
+
+
+def get_robot_companion_context_manager() -> RobotCompanionContextManager:
+    global _robot_companion_context_manager
+    if _robot_companion_context_manager is None:
+        _robot_companion_context_manager = RobotCompanionContextManager(
+            care_service=_care_service,
+            stream_service=_stream_service,
+            alarm_service=_alarm_service,
+            analysis_service=_analysis_service,
+            weather_provider=_build_robot_companion_weather_provider(),
+            location_provider=MockLocationProvider(),
+            robot_state_provider=MockRobotStateProvider(),
+        )
+    return _robot_companion_context_manager
+
+
+def get_robot_companion_service() -> RobotCompanionAgentService:
+    global _robot_companion_service
+    if _robot_companion_service is None:
+        _robot_companion_service = RobotCompanionAgentService(
+            context_manager=get_robot_companion_context_manager(),
+            intent_classifier=RobotCompanionIntentClassifier(_settings),
+            action_planner=RobotCompanionActionPlanner(),
+            safety_guard=RobotCompanionSafetyGuard(),
+        )
+    return _robot_companion_service
+
+
+def get_go2_companion_agent() -> Go2CompanionAgent:
+    global _go2_companion_agent
+    if _go2_companion_agent is None:
+        _go2_companion_agent = Go2CompanionAgent(_settings)
+    return _go2_companion_agent
+
+
+def get_go2_companion_dialogue_service() -> Go2CompanionDialogueService:
+    global _go2_companion_dialogue_service
+    if _go2_companion_dialogue_service is None:
+        _go2_companion_dialogue_service = Go2CompanionDialogueService(
+            agent=get_go2_companion_agent(),
+            context_manager=get_robot_companion_context_manager(),
+            stream_service=_stream_service,
+        )
+    return _go2_companion_dialogue_service
+
+
+def get_go2_companion_voice_service() -> Go2CompanionVoiceService:
+    global _go2_companion_voice_service
+    if _go2_companion_voice_service is None:
+        _go2_companion_voice_service = Go2CompanionVoiceService(
+            voice_service=VoiceService(_settings, device_service=_device_service),
+            agent=get_go2_companion_agent(),
+            dialogue_service=get_go2_companion_dialogue_service(),
+            file_asr_service=QwenFileAsrService(_settings),
+        )
+    return _go2_companion_voice_service
+
+
 def get_care_service() -> CareService:
     return _care_service
 
@@ -447,6 +587,30 @@ def get_structured_health_score_service() -> StructuredHealthScoreService:
 
 def get_warning_evaluation_service() -> WarningService:
     return _warning_service
+
+
+def get_health_insight_context_service() -> HealthInsightContextService:
+    global _health_insight_context_service
+    if _health_insight_context_service is None:
+        _health_insight_context_service = HealthInsightContextService(
+            care_service=_care_service,
+            device_service=_device_service,
+            stream_service=_stream_service,
+            score_service=_structured_health_score_service,
+            alarm_service=_alarm_service,
+            intelligent_scorer=_intelligent_scorer,
+        )
+    return _health_insight_context_service
+
+
+def get_health_llm_insight_service() -> HealthLlmInsightService:
+    global _health_llm_insight_service
+    if _health_llm_insight_service is None:
+        _health_llm_insight_service = HealthLlmInsightService(
+            settings=_settings,
+            context_service=get_health_insight_context_service(),
+        )
+    return _health_llm_insight_service
 
 
 def get_mobile_push_device_repo() -> MobilePushDeviceRepository:
@@ -545,6 +709,195 @@ def get_vision_service_client() -> VisionServiceClient:
             timeout=desired_timeout,
         )
     return _vision_service_client
+
+
+def get_robot_gateway_service() -> RobotGatewayService:
+    global _robot_gateway_service
+    desired_base_url = str(_settings.robot_gateway_base_url or "").strip().rstrip("/")
+    desired_timeout = max(0.1, float(_settings.robot_gateway_timeout_seconds))
+    desired_enabled = bool(_settings.robot_gateway_enabled)
+    if (
+        _robot_gateway_service is None
+        or _robot_gateway_service.base_url != desired_base_url
+        or _robot_gateway_service.enabled != desired_enabled
+        or abs(_robot_gateway_service.timeout_seconds - desired_timeout) > 1e-9
+    ):
+        _robot_gateway_service = RobotGatewayService(
+            base_url=desired_base_url,
+            timeout_seconds=desired_timeout,
+            enabled=desired_enabled,
+        )
+    return _robot_gateway_service
+
+
+def get_robot_task_repository() -> RobotTaskRepository:
+    global _robot_task_repository
+    if _robot_task_repository is None:
+        _robot_task_repository = RobotTaskRepository(_settings.database_url)
+    return _robot_task_repository
+
+
+def get_robot_risk_fusion_service() -> RobotRiskFusionService:
+    global _robot_risk_fusion_service
+    if _robot_risk_fusion_service is None:
+        _robot_risk_fusion_service = RobotRiskFusionService(
+            alarm_service=_alarm_service,
+            health_data_repository=_health_data_repository,
+        )
+    return _robot_risk_fusion_service
+
+
+def get_robot_task_service() -> RobotTaskService:
+    global _robot_task_service
+    gateway_service = get_robot_gateway_service()
+    if _robot_task_service is None or _robot_task_service.gateway_service is not gateway_service:
+        _robot_task_service = RobotTaskService(
+            repository=get_robot_task_repository(),
+            gateway_service=gateway_service,
+            websocket_manager=_websocket_manager,
+            risk_fusion_service=get_robot_risk_fusion_service(),
+        )
+    return _robot_task_service
+
+
+def get_robot_map_repository() -> RobotMapRepository:
+    global _robot_map_repository
+    if _robot_map_repository is None:
+        _robot_map_repository = RobotMapRepository(_settings.database_url)
+    return _robot_map_repository
+
+
+def get_robot_navigation_repository() -> RobotNavigationRepository:
+    global _robot_navigation_repository
+    if _robot_navigation_repository is None:
+        _robot_navigation_repository = RobotNavigationRepository(_settings.database_url)
+    return _robot_navigation_repository
+
+
+def get_robot_emergency_repository() -> RobotEmergencyRepository:
+    global _robot_emergency_repository
+    if _robot_emergency_repository is None:
+        _robot_emergency_repository = RobotEmergencyRepository(_settings.database_url)
+    return _robot_emergency_repository
+
+
+def get_robot_map_service() -> RobotMapService:
+    global _robot_map_service
+    if _robot_map_service is None:
+        _robot_map_service = RobotMapService(get_robot_map_repository())
+    return _robot_map_service
+
+
+def get_robot_safety_interlock_service() -> RobotSafetyInterlockService:
+    global _robot_safety_interlock_service
+    if _robot_safety_interlock_service is None:
+        _robot_safety_interlock_service = RobotSafetyInterlockService()
+    return _robot_safety_interlock_service
+
+
+def get_robot_navigation_gateway_service() -> RobotNavigationGatewayService:
+    global _robot_navigation_gateway_service
+    if _robot_navigation_gateway_service is None:
+        _robot_navigation_gateway_service = RobotNavigationGatewayService(
+            base_url=str(_settings.robot_gateway_base_url or "").strip().rstrip("/"),
+            timeout_seconds=max(0.1, float(_settings.robot_gateway_timeout_seconds)),
+            enabled=bool(_settings.robot_gateway_enabled),
+        )
+    return _robot_navigation_gateway_service
+
+
+def get_robot_navigation_event_hub() -> RobotNavigationEventHub:
+    global _robot_navigation_event_hub
+    if _robot_navigation_event_hub is None:
+        _robot_navigation_event_hub = RobotNavigationEventHub(queue_size=32)
+    return _robot_navigation_event_hub
+
+
+def get_robot_navigation_service() -> RobotNavigationService:
+    global _robot_navigation_service
+    if _robot_navigation_service is None:
+        _robot_navigation_service = RobotNavigationService(
+            get_robot_task_repository(),
+            get_robot_navigation_repository(),
+            get_robot_map_service(),
+            get_robot_navigation_gateway_service(),
+            get_robot_safety_interlock_service(),
+        )
+    return _robot_navigation_service
+
+
+def get_robot_emergency_service() -> RobotEmergencyService:
+    global _robot_emergency_service
+    if _robot_emergency_service is None:
+        _robot_emergency_service = RobotEmergencyService(
+            get_robot_emergency_repository(),
+            get_robot_navigation_service(),
+        )
+    return _robot_emergency_service
+
+
+def get_robot_navigation_application_service() -> RobotNavigationApplicationService:
+    global _robot_navigation_application_service
+    if _robot_navigation_application_service is None:
+        _robot_navigation_application_service = RobotNavigationApplicationService(
+            map_repository=get_robot_map_repository(),
+            navigation_repository=get_robot_navigation_repository(),
+            emergency_repository=get_robot_emergency_repository(),
+            task_repository=get_robot_task_repository(),
+            map_service=get_robot_map_service(),
+            navigation_service=get_robot_navigation_service(),
+            emergency_service=get_robot_emergency_service(),
+            gateway_service=get_robot_navigation_gateway_service(),
+            event_hub=get_robot_navigation_event_hub(),
+            legacy_gateway_service=get_robot_gateway_service(),
+        )
+    return _robot_navigation_application_service
+
+
+def get_robot_navigation_ws_proxy_service() -> RobotNavigationWsProxyService:
+    global _robot_navigation_ws_proxy_service
+    if _robot_navigation_ws_proxy_service is None:
+        _robot_navigation_ws_proxy_service = RobotNavigationWsProxyService(
+            get_robot_navigation_gateway_service(),
+            get_robot_navigation_event_hub(),
+        )
+    return _robot_navigation_ws_proxy_service
+
+
+def get_robot_point_cloud_hub() -> RobotPointCloudHub:
+    global _robot_point_cloud_hub
+    if _robot_point_cloud_hub is None:
+        _robot_point_cloud_hub = RobotPointCloudHub()
+    return _robot_point_cloud_hub
+
+
+def get_robot_point_cloud_ws_proxy_service() -> RobotPointCloudWsProxyService:
+    global _robot_point_cloud_ws_proxy_service
+    if _robot_point_cloud_ws_proxy_service is None:
+        _robot_point_cloud_ws_proxy_service = RobotPointCloudWsProxyService(
+            str(_settings.robot_gateway_base_url or "").strip().rstrip("/"),
+            get_robot_point_cloud_hub(),
+        )
+    return _robot_point_cloud_ws_proxy_service
+
+
+async def shutdown_robot_navigation_components() -> None:
+    global _robot_navigation_ws_proxy_service, _robot_navigation_event_hub
+    global _robot_navigation_application_service
+    global _robot_point_cloud_ws_proxy_service, _robot_point_cloud_hub
+    if _robot_point_cloud_ws_proxy_service is not None:
+        await _robot_point_cloud_ws_proxy_service.close()
+        _robot_point_cloud_ws_proxy_service = None
+    if _robot_point_cloud_hub is not None:
+        _robot_point_cloud_hub.close()
+        _robot_point_cloud_hub = None
+    if _robot_navigation_ws_proxy_service is not None:
+        await _robot_navigation_ws_proxy_service.close()
+        _robot_navigation_ws_proxy_service = None
+    if _robot_navigation_event_hub is not None:
+        _robot_navigation_event_hub.close()
+        _robot_navigation_event_hub = None
+    _robot_navigation_application_service = None
 
 
 def get_model_finetune_service() -> ModelFinetuneService:
@@ -1665,6 +2018,8 @@ async def _ingest_video_bridge_alarm_event(event: dict[str, object]) -> AlarmRec
         metadata=enriched_metadata,
     )
     alarm = normalize_fall_alarm_record(alarm)
+    robot_dispatch = await get_robot_task_service().dispatch_fall_confirmation(event=event, alarm=alarm)
+    alarm.metadata["robot_task"] = robot_dispatch
 
     emitted = _alarm_service.evaluate_alarm_records([alarm])
     if not emitted:

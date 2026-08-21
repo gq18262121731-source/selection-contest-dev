@@ -33,7 +33,7 @@ function updateText(event: Event, field: "username" | "password") {
       <div class="modern-login-brand__icon">
         <Heart :size="32" :stroke-width="2" />
       </div>
-      <h1 class="modern-login-brand__title">智慧养老健康监测平台</h1>
+      <h1 class="modern-login-brand__title">智慧健康监测平台</h1>
       <p class="modern-login-brand__subtitle">AI-Powered Health Monitoring System</p>
     </div>
 

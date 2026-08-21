@@ -30,6 +30,10 @@ const props = defineProps<{
   awaitingRealtime?: boolean;
 }>();
 
+const emit = defineEmits<{
+  (event: "open-health-analysis"): void;
+}>();
+
 const chartRef = ref<HTMLDivElement | null>(null);
 let chart: ECharts | null = null;
 
@@ -84,6 +88,7 @@ const hasObservedRealtime = computed(() =>
 const showPendingPlaceholder = computed(() => isPending.value && !hasObservedRealtime.value);
 const currentPressure = computed(() => parseBloodPressure(currentSample.value?.blood_pressure));
 const showPointSymbols = computed(() => props.samples.length <= 2);
+const scoreText = computed(() => structuredSummary.value?.health_score?.toFixed(1) ?? props.device?.latest_health_score ?? "--");
 
 const chartSeries = computed(() => {
   const labels = props.samples.map((sample) =>
@@ -144,13 +149,12 @@ const metricCards = computed(() => [
     tone: "temp",
   },
   {
-    label: "步数",
-    value: currentSample.value?.steps != null ? `${currentSample.value.steps} 步` : "--",
-    tone: "steps",
+    label: "健康分析",
+    value: scoreText.value === "--" ? "--" : `评分 ${scoreText.value}`,
+    tone: "analysis",
+    action: true,
   },
 ]);
-
-const scoreText = computed(() => structuredSummary.value?.health_score?.toFixed(1) ?? props.device?.latest_health_score ?? "--");
 
 const panelMeta = computed(() => {
   if (!props.elder) {
@@ -431,6 +435,14 @@ onUnmounted(() => {
       <article v-for="item in metricCards" :key="item.label" class="metric-plate" :data-tone="item.tone">
         <span>{{ item.label }}</span>
         <strong>{{ item.value }}</strong>
+        <button
+          v-if="item.action"
+          type="button"
+          class="metric-action"
+          @click="emit('open-health-analysis')"
+        >
+          查看分析
+        </button>
       </article>
     </div>
 
@@ -558,8 +570,30 @@ onUnmounted(() => {
   color: #f59e0b;
 }
 
-.metric-plate[data-tone="steps"] strong {
+.metric-plate[data-tone="analysis"] strong {
   color: #3b82f6;
+}
+
+.metric-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.metric-action:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
+  transform: translateY(-1px);
 }
 
 .monitor-context {

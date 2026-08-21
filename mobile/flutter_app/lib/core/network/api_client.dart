@@ -52,7 +52,12 @@ class ApiClient {
     return _dio.post(path, data: data, options: options);
   }
 
-  Future<Response> postStream(String path, {dynamic data}) {
+  Future<Response> postStream(
+    String path, {
+    dynamic data,
+    Duration? sendTimeout,
+    Duration? receiveTimeout,
+  }) {
     _syncBaseUrl();
     // On Web, ResponseType.stream is not supported by the default BrowserHttpClientAdapter.
     // We fallback to ResponseType.plain and let the repository handle it as a single chunk
@@ -63,7 +68,8 @@ class ApiClient {
       data: data,
       options: Options(
         responseType: responseType,
-        receiveTimeout: const Duration(seconds: 60),
+        sendTimeout: sendTimeout,
+        receiveTimeout: receiveTimeout ?? const Duration(seconds: 60),
       ),
     );
   }

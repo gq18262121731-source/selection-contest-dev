@@ -349,6 +349,120 @@ export interface CareDirectory {
   families: FamilyProfile[];
 }
 
+export interface Go2CompanionHealthContext {
+  risk_level: "low" | "medium" | "high" | "unknown";
+  health_score: number | null;
+  recent_fall: boolean;
+  sos: boolean;
+  today_steps: number | null;
+  data_freshness: "fresh" | "stale" | "missing";
+  device_mac: string | null;
+}
+
+export interface Go2CompanionEnvironmentContext {
+  weather: "sunny" | "rain" | "windy" | "hot" | "cold" | "unknown";
+  temperature: number | null;
+  humidity: number | null;
+  wind_level: number | null;
+  description: string;
+  suggestion: string;
+  provider: "mock" | "qweather";
+  source: "mock" | "qweather";
+}
+
+export interface Go2CompanionContext {
+  elder_id: string;
+  elder_name: string;
+  generated_at: string;
+  health: Go2CompanionHealthContext;
+  environment: Go2CompanionEnvironmentContext;
+  location: {
+    city: string;
+    area: string;
+    address: string;
+    provider: "mock";
+  };
+  robot: {
+    online: boolean;
+    motion_enabled: false;
+    provider: "mock";
+  };
+}
+
+export interface Go2CompanionHealthMetrics {
+  available: boolean;
+  source: "realtime_stream";
+  observed_at: string | null;
+  freshness: "fresh" | "stale" | "missing";
+  risk_level: "low" | "medium" | "high" | "unknown";
+  heart_rate: number | null;
+  blood_oxygen: number | null;
+  temperature: number | null;
+  blood_pressure: string | null;
+  health_score: number | null;
+  steps: number | null;
+  recent_fall: boolean;
+  sos: boolean;
+}
+
+export interface Go2CompanionTextTurnRequest {
+  elder_id: string;
+  text: string;
+  session_id?: string;
+  device_mac?: string;
+  location_hint?: string;
+}
+
+export interface Go2CompanionTextTurnResponse {
+  agent: "go2_companion";
+  version: "1.1";
+  session_id: string;
+  reply: string;
+  llm_provider: string;
+  llm_model: string;
+  context: Go2CompanionContext;
+  health_metrics: Go2CompanionHealthMetrics;
+}
+
+export interface Go2CompanionVoiceTurnResponse {
+  agent: "go2_companion";
+  version: "1.0";
+  session_id: string;
+  transcript: string;
+  reply: string;
+  audio_b64: string;
+  audio_url: string;
+  audio_format: string;
+  asr_provider: string;
+  llm_provider: string;
+  llm_model: string;
+  tts_provider: string;
+  tts_voice: string;
+  grounded: boolean;
+  context: Go2CompanionContext | null;
+  health_metrics: Go2CompanionHealthMetrics | null;
+  playback: {
+    mode: "response_only";
+    go2_status: "not_configured";
+    ready_for_client_playback: boolean;
+    message: string;
+  };
+}
+
+export interface Go2CompanionStatus {
+  pipeline: string[];
+  asr_configured: boolean;
+  llm_configured: boolean;
+  tts_configured: boolean;
+  asr_model: string;
+  llm_model: string;
+  tts_model: string;
+  playback_mode: "response_only";
+  go2_microphone: "not_configured";
+  go2_speaker: "not_configured";
+  context_grounding_supported: boolean;
+}
+
 export interface SessionUser {
   id: string;
   username: string;
@@ -764,6 +878,31 @@ export interface CommunityAgentSummaryResponse {
   sources: AgentSourceItem[];
   agent_meta: CommunityAgentMeta;
 }
+
+export interface HealthScoreInsightRequest {
+  device_mac: string;
+  elder_id?: string | null;
+  window_minutes?: number;
+  use_llm?: boolean;
+}
+
+export interface HealthScoreInsightResponse {
+  elder_name?: string | null;
+  room_no?: string | null;
+  device_mac: string;
+  generated_at: string;
+  data_freshness: "fresh" | "stale" | "missing";
+  risk_level: "low" | "medium" | "high" | "critical";
+  summary: string;
+  score_explanation: string;
+  trend_analysis: string;
+  model_assessment: string;
+  suggested_actions: string[];
+  watch_items: string[];
+  confidence: "low" | "medium" | "high";
+  llm_used: boolean;
+  fallback_used: boolean;
+}
  
 export interface FamilyRelationCreateRequest {
   elder_user_id: string;
@@ -792,8 +931,108 @@ export interface VisionHealthResponse {
   [key: string]: unknown;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000/api/v1";
-const WS_BASE = (import.meta.env.VITE_WS_BASE ?? "ws://localhost:8000").replace(/\/$/, "");
+export type RobotTaskStatus = "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED" | "BLOCKED";
+export type RobotTaskStep =
+  | "RECEIVED"
+  | "PREFLIGHT"
+  | "MOVING"
+  | "ARRIVED"
+  | "CAMERA_CHECK"
+  | "VOICE_PROMPT"
+  | "WAITING_RESPONSE"
+  | "REPORTING";
+export type RobotTaskOutcome = "SAFE" | "NEED_HELP" | "NO_RESPONSE" | "UNKNOWN";
+
+export interface RobotTask {
+  task_id: string;
+  gateway_task_id?: string | null;
+  source_event_id: string;
+  trace_id: string;
+  alarm_event_id?: string | null;
+  elder_id: string;
+  elder_name: string;
+  robot_id?: string | null;
+  task_type: string;
+  location: string;
+  risk_level: string;
+  status: RobotTaskStatus;
+  current_step: RobotTaskStep;
+  outcome?: RobotTaskOutcome | null;
+  last_sequence: number;
+  error_code?: string | null;
+  error_message?: string | null;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  updated_at: string;
+}
+
+export interface RobotTaskTimeline {
+  id?: number | null;
+  task_id: string;
+  callback_id?: string | null;
+  sequence: number;
+  status: RobotTaskStatus;
+  step: RobotTaskStep;
+  message: string;
+  occurred_at: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RobotObservation {
+  id?: number | null;
+  task_id: string;
+  snapshot_url?: string | null;
+  camera_available?: boolean | null;
+  voice_available?: boolean | null;
+  response_type?: RobotTaskOutcome | null;
+  transcript?: string | null;
+  observed_at: string;
+  raw_payload: Record<string, unknown>;
+}
+
+export interface RobotTaskListResponse {
+  tasks: RobotTask[];
+}
+
+export interface RobotTaskDetailResponse {
+  task: RobotTask;
+  gateway?: Record<string, unknown> | null;
+}
+
+export interface RobotTaskTimelineResponse {
+  timeline: RobotTaskTimeline[];
+}
+
+export interface RobotTaskObservationResponse {
+  observation?: RobotObservation | null;
+}
+
+export interface RobotStatusResponse {
+  ok: boolean;
+  gateway?: Record<string, unknown>;
+  task_center?: {
+    persisted: boolean;
+    task_count: number;
+    current_task?: RobotTask | null;
+  };
+}
+
+export interface RobotSocketEvent {
+  event_type?: string;
+  task_id?: string;
+  gateway_task_id?: string | null;
+  source_event_id?: string;
+  trace_id?: string;
+  status?: RobotTaskStatus;
+  step?: RobotTaskStep;
+  outcome?: RobotTaskOutcome | null;
+  occurred_at?: string;
+}
+
+export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000/api/v1";
+export const WS_BASE = (import.meta.env.VITE_WS_BASE ?? "ws://localhost:8000").replace(/\/$/, "");
 
 export function getMainSystemBaseUrl(): string {
   try {
@@ -810,12 +1049,16 @@ export function getVisionHealthEndpoint(): string {
 export class ApiError extends Error {
   status: number;
   detail: string;
+  code?: string;
+  data?: Record<string, unknown>;
 
-  constructor(status: number, detail: string) {
+  constructor(status: number, detail: string, code?: string, data?: Record<string, unknown>) {
     super(detail || `Request failed: ${status}`);
     this.name = "ApiError";
     this.status = status;
     this.detail = detail || `Request failed: ${status}`;
+    this.code = code;
+    this.data = data;
   }
 }
 
@@ -829,17 +1072,27 @@ function humanizeApiDetail(detail: string): string {
   return detail;
 }
 
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   if (!response.ok) {
     let detail = `Request failed: ${response.status}`;
+    let code: string | undefined;
+    let errorData: Record<string, unknown> | undefined;
     try {
       const payload = (await response.json()) as {
+        code?: string;
+        message?: string;
+        data?: Record<string, unknown>;
         detail?:
           | string
           | { message?: string; code?: string }
           | Array<{ msg?: string; loc?: Array<string | number> }>;
       };
+      if (typeof payload.code === "string") code = payload.code;
+      if (typeof payload.message === "string" && payload.message) detail = payload.message;
+      if (payload.data && typeof payload.data === "object" && !Array.isArray(payload.data)) {
+        errorData = payload.data;
+      }
       const detailPayload = payload.detail;
       if (typeof detailPayload === "string") {
         detail = humanizeApiDetail(detailPayload);
@@ -854,12 +1107,13 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
       } else if (detailPayload && !Array.isArray(detailPayload) && detailPayload.message) {
         detail = detailPayload.message;
       } else if (detailPayload && !Array.isArray(detailPayload) && detailPayload.code) {
+        code = detailPayload.code;
         detail = detailPayload.code;
       }
     } catch {
       // ignore non-json error bodies
     }
-    throw new ApiError(response.status, detail);
+    throw new ApiError(response.status, detail, code, errorData);
   }
   return (await response.json()) as T;
 }
@@ -1066,6 +1320,34 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getCareDirectory: () => requestJson<CareDirectory>(`${API_BASE}/care/directory`),
+  getGo2CompanionStatus: () =>
+    requestJson<Go2CompanionStatus>(`${API_BASE}/go2-companion/status`),
+  runGo2CompanionTextTurn: (payload: Go2CompanionTextTurnRequest) =>
+    requestJson<Go2CompanionTextTurnResponse>(`${API_BASE}/go2-companion/text-turn`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  runGo2CompanionVoiceTurn: (payload: {
+    file: File;
+    session_id: string;
+    voice?: string;
+    elder_id?: string;
+    device_mac?: string;
+    location_hint?: string;
+  }) => {
+    const form = new FormData();
+    form.append("file", payload.file, payload.file.name);
+    form.append("session_id", payload.session_id);
+    form.append("voice", payload.voice ?? "Serena");
+    if (payload.elder_id) form.append("elder_id", payload.elder_id);
+    if (payload.device_mac) form.append("device_mac", payload.device_mac);
+    if (payload.location_hint) form.append("location_hint", payload.location_hint);
+    return requestJson<Go2CompanionVoiceTurnResponse>(`${API_BASE}/go2-companion/voice-turn`, {
+      method: "POST",
+      body: form,
+    });
+  },
   getFamilyCareDirectory: (familyId: string) =>
     requestJson<CareDirectory>(`${API_BASE}/care/directory/family/${familyId}`),
   listMockAccounts: () => requestJson<AuthAccountPreview[]>(`${API_BASE}/auth/mock-accounts`),
@@ -1152,10 +1434,48 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }),
+  getHealthScoreInsight: (payload: HealthScoreInsightRequest) =>
+    requestJson<HealthScoreInsightResponse>(`${API_BASE}/agent/health-score/insight`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        window_minutes: 5,
+        use_llm: true,
+        ...payload,
+      }),
+    }),
   getAgentElders: (token: string) =>
     requestJson<AgentElderSubject[]>(`${API_BASE}/agent/elders`, {
       headers: withBearer(token),
     }),
+  getRobotStatus: (signal?: AbortSignal) =>
+    requestJson<RobotStatusResponse>(`${API_BASE}/robot/status`, { signal }),
+  listRobotTasks: (
+    params: { status?: string; elder_id?: string; outcome?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ) => {
+    const query = new URLSearchParams();
+    if (params.status) query.set("status", params.status);
+    if (params.elder_id) query.set("elder_id", params.elder_id);
+    if (params.outcome) query.set("outcome", params.outcome);
+    query.set("limit", String(params.limit ?? 100));
+    return requestJson<RobotTaskListResponse>(`${API_BASE}/robot/tasks?${query.toString()}`, { signal });
+  },
+  getRobotTask: (taskId: string, signal?: AbortSignal) =>
+    requestJson<RobotTaskDetailResponse>(`${API_BASE}/robot/tasks/${taskId}`, { signal }),
+  getRobotTaskTimeline: (taskId: string, signal?: AbortSignal) =>
+    requestJson<RobotTaskTimelineResponse>(`${API_BASE}/robot/tasks/${taskId}/timeline`, { signal }),
+  getRobotTaskObservation: (taskId: string, signal?: AbortSignal) =>
+    requestJson<RobotTaskObservationResponse>(`${API_BASE}/robot/tasks/${taskId}/observation`, { signal }),
+  cancelRobotTask: (taskId: string) =>
+    requestJson<{ ok: boolean; task: RobotTask }>(`${API_BASE}/robot/tasks/${taskId}/cancel`, { method: "POST" }),
+  simulateRobotResponse: (taskId: string, payload: { response_type: RobotTaskOutcome; transcript?: string; snapshot_url?: string }) =>
+    requestJson<unknown>(`${API_BASE}/robot/tasks/${taskId}/simulate-response`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  getRobotArrivalEvidenceUrl: (taskId: string) => `${API_BASE}/robot/tasks/${taskId}/evidence/arrival.jpg`,
   healthSocket: (mac: string) => new WebSocket(`${WS_BASE}/ws/health/${mac}`),
   alarmSocket: () => new WebSocket(`${WS_BASE}/ws/alarms`),
 

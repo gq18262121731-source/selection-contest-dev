@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { AlarmRecord } from "../../api/client";
+import { extractRobotAlarmExtension } from "../../utils/robotEmergencyPolicy";
 
 const props = defineProps<{
   alarm: AlarmRecord | null;
@@ -10,6 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   acknowledge: [];
+  openEmergency: [incidentId: string];
 }>();
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -41,6 +43,10 @@ const incidentId = computed(() => {
   const value = eventPayload.value?.incident_id;
   return typeof value === "string" && value.trim() ? value : "--";
 });
+
+const emergencyExtension = computed(() =>
+  props.alarm ? extractRobotAlarmExtension(props.alarm) : null,
+);
 
 const fallScore = computed(() => {
   const value = eventPayload.value?.fall_score ?? eventPayload.value?.fall_prob ?? props.alarm?.anomaly_probability;
@@ -99,18 +105,33 @@ const triggeredAt = computed(() => {
         </div>
 
         <div class="fall-overlay__actions">
-          <p v-if="additionalCount > 0" class="fall-overlay__queue">
-            当前还有 {{ additionalCount }} 条跌倒告警待确认。
-          </p>
-          <p v-else class="fall-overlay__queue-placeholder"></p>
-          <button
-            type="button"
-            class="fall-overlay__button"
-            :disabled="acknowledging"
-            @click="emit('acknowledge')"
-          >
-            {{ acknowledging ? "处理中..." : "确认已查看并关闭告警" }}
-          </button>
+          <div class="fall-overlay__queue-wrap">
+            <p v-if="additionalCount > 0" class="fall-overlay__queue">
+              当前还有 {{ additionalCount }} 条跌倒告警待确认。
+            </p>
+            <p v-else-if="!emergencyExtension" class="fall-overlay__queue">
+              应急任务尚未建立，请先按普通告警流程人工复核。
+            </p>
+          </div>
+          <div class="fall-overlay__buttons">
+            <button
+              v-if="emergencyExtension"
+              type="button"
+              class="fall-overlay__button fall-overlay__button--primary"
+              :disabled="acknowledging"
+              @click="emit('openEmergency', emergencyExtension.incident_id)"
+            >
+              进入应急处置
+            </button>
+            <button
+              type="button"
+              class="fall-overlay__button"
+              :disabled="acknowledging"
+              @click="emit('acknowledge')"
+            >
+              {{ acknowledging ? "处理中..." : "我已知晓" }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -143,6 +164,9 @@ const triggeredAt = computed(() => {
 .fall-overlay__panel {
   position: relative;
   width: min(900px, 100%);
+  max-height: calc(100dvh - 56px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: grid;
   gap: 22px;
   padding: 28px;
@@ -211,12 +235,11 @@ const triggeredAt = computed(() => {
   min-height: 48px;
 }
 
-.fall-overlay__queue-placeholder {
-  margin: 0;
-  flex: 1;
-}
+.fall-overlay__queue-wrap { flex: 1; }
+.fall-overlay__buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 
 .fall-overlay__button {
+  min-height: 46px;
   border: none;
   border-radius: 999px;
   padding: 14px 22px;
@@ -226,6 +249,11 @@ const triggeredAt = computed(() => {
   cursor: pointer;
   flex-shrink: 0;
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+}
+
+.fall-overlay__button--primary {
+  background: #fff;
+  color: #7b3900;
 }
 
 .fall-overlay__button:disabled {
@@ -262,17 +290,84 @@ const triggeredAt = computed(() => {
   }
 
   .fall-overlay__panel {
+    gap: 16px;
     padding: 22px;
     border-radius: 24px;
   }
 
   .fall-overlay__grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .fall-overlay__actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .fall-overlay__buttons {
+    justify-content: stretch;
+  }
+
+  .fall-overlay__button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 460px) {
+  .fall-overlay {
+    padding: 10px;
+  }
+
+  .fall-overlay__panel {
+    max-height: calc(100dvh - 20px);
+    gap: 12px;
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .fall-overlay__panel h2 {
+    font-size: 1.55rem;
+    line-height: 1.12;
+  }
+
+  .fall-overlay__lead,
+  .fall-overlay__queue {
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .fall-overlay__grid {
+    gap: 8px;
+  }
+
+  .fall-card {
+    gap: 4px;
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .fall-card span {
+    font-size: 0.68rem;
+  }
+
+  .fall-card strong {
+    font-size: 0.78rem;
+  }
+
+  .fall-overlay__buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fall-overlay__pulse {
+    animation: none;
+  }
+
+  .fall-overlay-enter-active,
+  .fall-overlay-leave-active {
+    transition: none;
   }
 }
 </style>

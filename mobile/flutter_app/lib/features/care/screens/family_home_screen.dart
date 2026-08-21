@@ -75,6 +75,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         elevation: 0,
         actions: <Widget>[
           _buildAlarmAction(context),
+          _buildDemoSosAction(context, careProvider),
           const LogoutAction(),
           IconButton(
             icon: const Icon(Icons.settings_ethernet, color: AppColors.textSub),
@@ -95,6 +96,25 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         ],
       ),
       body: _buildBody(careProvider),
+    );
+  }
+
+  Widget _buildDemoSosAction(BuildContext context, CareProvider careProvider) {
+    final profile = careProvider.profile;
+    CareAccessDeviceMetric? metric;
+    if (profile != null && profile.deviceMetrics.isNotEmpty) {
+      metric = profile.deviceMetrics.first;
+    }
+
+    return IconButton(
+      tooltip: '演示 SOS 告警',
+      icon: const Icon(Icons.sos, color: AppColors.error),
+      onPressed: () {
+        context.read<AlarmProvider>().injectDemoSosAlarm(
+              deviceMac: metric?.deviceMac,
+              subjectName: metric?.subjectName,
+            );
+      },
     );
   }
 

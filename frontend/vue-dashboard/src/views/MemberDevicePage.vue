@@ -2,16 +2,20 @@
 import { computed, onMounted, ref, toRef, watch } from "vue";
 import type { DeviceBindLogRecord, SessionUser, SystemInfoResponse } from "../api/client";
 import { ApiError, api } from "../api/client";
+import CommunityDeviceInspector from "../components/CommunityDeviceInspector.vue";
+import CommunityDeviceRail from "../components/CommunityDeviceRail.vue";
+import CommunityRelationTopology from "../components/CommunityRelationTopology.vue";
 import PageHeader from "../components/layout/PageHeader.vue";
 import { useCareDirectoryDashboard } from "../composables/useCareDirectoryDashboard";
+import { SELECTED_DEVICE_STORAGE_KEY, useCommunityWorkspace } from "../composables/useCommunityWorkspace";
 import { useRelationActions } from "../composables/useRelationActions";
-import { SELECTED_DEVICE_STORAGE_KEY } from "../composables/useCommunityWorkspace";
 
 const props = defineProps<{
   sessionUser: SessionUser;
 }>();
 
 const sessionUser = toRef(props, "sessionUser");
+const workspace = useCommunityWorkspace(sessionUser);
 const {
   allFamilies,
   community,
@@ -94,6 +98,7 @@ const pageMeta = computed(() => [
   `老人 ${elders.value.length}`,
   `家属 ${allFamilies.value.length}`,
   `设备 ${devices.value.length}`,
+  `关系链 ${workspace.relationTopology.value?.lanes.length ?? 0}`,
   `同步 ${syncLabel.value}`,
 ]);
 const selectedHistoryDevice = computed(
@@ -262,6 +267,30 @@ onMounted(() => {
     />
 
     <p v-if="dashboardLoadError" class="feedback-banner feedback-error">{{ dashboardLoadError }}</p>
+
+    <section class="embedded-topology-section">
+      <CommunityDeviceRail
+        :elders="workspace.topRiskElders.value"
+        :selected-elder-id="workspace.selectedElderId.value"
+        @select="workspace.setSelectedElderId"
+      />
+
+      <div class="topology-two-column-layout">
+        <div class="topology-left-column">
+          <CommunityRelationTopology
+            :topology="workspace.relationTopology.value ?? null"
+            :selected-device-mac="workspace.selectedDeviceMac.value"
+            @select-device="workspace.setSelectedDeviceMac"
+          />
+        </div>
+        <div class="topology-right-column">
+          <CommunityDeviceInspector
+            :elder="workspace.selectedElder.value"
+            :device="workspace.selectedDevice.value"
+          />
+        </div>
+      </div>
+    </section>
 
     <section class="member-device-grid">
       <article class="panel member-device-panel">
@@ -538,6 +567,34 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.embedded-topology-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.topology-two-column-layout {
+  display: flex;
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  align-items: flex-start;
+}
+
+.topology-left-column {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.topology-right-column {
+  width: 400px;
+  flex-shrink: 0;
+}
+
 .member-device-grid {
   display: grid;
   gap: 24px;
@@ -917,6 +974,23 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 1400px) {
+  .topology-right-column {
+    width: 360px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .topology-two-column-layout {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .topology-right-column {
+    width: 100%;
+  }
 }
 
 @media (max-width: 960px) {

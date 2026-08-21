@@ -2,8 +2,8 @@
 import { computed } from "vue";
 import {
   Activity,
+  Bot,
   Cpu,
-  Network,
   SquareTerminal,
   type LucideIcon,
   UsersRound,
@@ -18,6 +18,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   navigate: [page: PageKey];
 }>();
+
+const robotWorkspacePages = new Set<PageKey>([
+  "robot-tasks",
+  "robot-status",
+  "robot-navigation",
+  "robot-follow",
+  "robot-emergency",
+]);
 
 type NavItem = {
   page: PageKey;
@@ -35,16 +43,22 @@ const navItems = computed<NavItem[]>(() =>
       icon: Activity,
     },
     {
-      page: "topology" as PageKey,
-      label: "设备拓扑",
-      description: "老人、家属与设备关系",
-      icon: Network,
-    },
-    {
       page: "members" as PageKey,
       label: "成员设备",
-      description: "注册、绑定与台账",
+      description: "拓扑、注册与台账",
       icon: UsersRound,
+    },
+    {
+      page: "companion" as PageKey,
+      label: "小康智能体",
+      description: "健康、天气与语音联动测试",
+      icon: Bot,
+    },
+    {
+      page: "robot-tasks" as PageKey,
+      label: "机器人任务",
+      description: "任务、状态、巡航与跟随",
+      icon: Bot,
     },
     {
       page: "agent" as PageKey,
@@ -60,13 +74,20 @@ const navItems = computed<NavItem[]>(() =>
     },
   ] satisfies NavItem[]).filter((item) => props.allowedPages.includes(item.page)),
 );
+
+function isNavItemActive(page: PageKey) {
+  if (page === "robot-tasks") {
+    return robotWorkspacePages.has(props.activePage);
+  }
+  return props.activePage === page;
+}
 </script>
 
 <template>
   <nav v-if="navItems.length" class="modern-primary-nav" aria-label="主导航">
     <div class="modern-primary-nav__header">
       <h3 class="modern-primary-nav__title">社区工作台</h3>
-      <p class="modern-primary-nav__subtitle">监护、拓扑、成员设备等智能体分区协作</p>
+      <p class="modern-primary-nav__subtitle">监护、成员设备等智能体分区协作</p>
     </div>
     
     <div class="modern-primary-nav__items">
@@ -75,7 +96,8 @@ const navItems = computed<NavItem[]>(() =>
         :key="item.page"
         type="button"
         class="modern-primary-nav__item"
-        :class="{ 'modern-primary-nav__item--active': activePage === item.page }"
+        :class="{ 'modern-primary-nav__item--active': isNavItemActive(item.page) }"
+        :aria-current="isNavItemActive(item.page) ? 'page' : undefined"
         @click="emit('navigate', item.page)"
       >
         <div class="modern-primary-nav__icon">

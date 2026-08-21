@@ -31,8 +31,8 @@ const roleLabel = computed(() => {
     <div class="modern-global-header__brand">
       <div class="modern-global-header__icon">护</div>
       <div class="modern-global-header__text">
-        <p class="modern-global-header__eyebrow">AIoT Care Console</p>
-        <h1 class="modern-global-header__title">智慧康养健康监测平台</h1>
+        <p class="modern-global-header__eyebrow">智慧健康工作台</p>
+        <h1 class="modern-global-header__title">智慧健康监测平台</h1>
       </div>
     </div>
 

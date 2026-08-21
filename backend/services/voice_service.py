@@ -4,7 +4,7 @@ import base64
 import io
 import logging
 import wave
-from typing import Any, Literal
+from typing import Any, Iterator, Literal
 
 from openai import OpenAI
 
@@ -34,6 +34,10 @@ class VoiceService:
     def __init__(self, settings: Settings, device_service: Any | None = None) -> None:
         self._settings = settings
         self._device_service = device_service
+
+    @property
+    def settings(self) -> Settings:
+        return self._settings
 
     @property
     def _api_key(self) -> str:
@@ -171,6 +175,8 @@ class VoiceService:
             "你是面向老人的健康说明助手、AI健康守护助手，当前正处于智慧康养项目的演示体验环节。\n"
             "无论用户说什么，必须优先理解用户的语音，然后基于提供的健康监测数据进行自然、口语化的语音反馈。\n"
             "你的任务是用简单、温和、充满关怀的拟人化口语和体验者（代入老人角色）对话，展现系统的智能化与温度。\n\n"
+            "Sound warm, gentle, natural, and reassuring. "
+            "Never invent measurements, diagnoses, symptoms, or events.\n\n"
             "约束要求：\n"
             "1. 用简单词语和短句，不使用复杂医学术语。一切回答必须使用简体中文。\n"
             "2. 语气温和、安抚、好理解，不制造恐慌。必须控制在2到3个短句以内，适合直接转换为语音念给老人听。\n"
@@ -230,7 +236,7 @@ class VoiceService:
             logger.warning("ASR failed: %s", exc)
             return {"ok": False, "text": "", "error": str(exc)}
 
-    def omni_chat(
+    def omni_chat_stream(
         self,
         audio_bytes: bytes,
         *,
@@ -238,10 +244,15 @@ class VoiceService:
         fmt: str = "wav",
         device_mac: str | None = None,
         role: str = "elder",
-    ) -> dict[str, object]:
-        """Call the configured DashScope omni model through the OpenAI-compatible API."""
+    ) -> Iterator[dict[str, object]]:
+        """Yield text deltas and the completed audio from the configured Omni model."""
         if not self._configured:
-            return {"ok": False, "text": "", "error": "DASHSCOPE_API_KEY not configured"}
+            yield {
+                "type": "error",
+                "ok": False,
+                "error": "DASHSCOPE_API_KEY not configured",
+            }
+            return
 
         model_id = self._settings.qwen_omni_model_id
         input_format = self._normalize_audio_format(fmt)
@@ -268,7 +279,7 @@ class VoiceService:
 
         audio_input_b64 = base64.b64encode(audio_bytes).decode("ascii")
         messages = [
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": system_prompt},
             {
                 "role": "user",
                 "content": [
@@ -320,6 +331,7 @@ class VoiceService:
 
             text_parts: list[str] = []
             audio_pcm_parts: list[str] = []
+            audio_sequence = 0
 
             for chunk in completion:
                 choices = getattr(chunk, "choices", None) or []
@@ -333,10 +345,23 @@ class VoiceService:
                 text_delta = self._extract_text_delta(getattr(delta, "content", None))
                 if text_delta:
                     text_parts.append(text_delta)
+                    yield {
+                        "type": "answer.delta",
+                        "delta": text_delta,
+                    }
 
                 audio_delta = self._extract_audio_delta(getattr(delta, "audio", None))
                 if audio_delta:
                     audio_pcm_parts.append(audio_delta)
+                    yield {
+                        "type": "audio.delta",
+                        "delta": audio_delta,
+                        "sequence": audio_sequence,
+                        "encoding": "pcm_s16le",
+                        "sample_rate": 24000,
+                        "channels": 1,
+                    }
+                    audio_sequence += 1
 
             answer_text = "".join(text_parts).strip()
             audio_pcm_b64 = "".join(audio_pcm_parts)
@@ -354,18 +379,25 @@ class VoiceService:
                     audio_url = str(fallback_tts.get("audio_url", "") or "")
                     selected_voice = str(fallback_tts.get("voice") or selected_voice or "")
 
-            return {
+            if audio_wav_b64 or audio_url:
+                yield {
+                    "type": "audio.completed",
+                    "audio_b64": audio_wav_b64,
+                    "audio_pcm_b64": audio_pcm_b64,
+                    "audio_url": audio_url
+                    or (f"data:audio/wav;base64,{audio_wav_b64}" if audio_wav_b64 else ""),
+                    "audio_sample_rate": 24000 if audio_wav_b64 else None,
+                    "fmt": "wav",
+                    "voice": selected_voice,
+                }
+
+            yield {
+                "type": "answer.completed",
                 "ok": True,
-                "text": answer_text,
                 "answer": answer_text,
-                "audio_b64": audio_wav_b64,
-                "audio_pcm_b64": audio_pcm_b64,
-                "audio_url": audio_url or (f"data:audio/wav;base64,{audio_wav_b64}" if audio_wav_b64 else ""),
-                "audio_sample_rate": 24000 if audio_wav_b64 else None,
-                "fmt": "wav" if audio_wav_b64 else None,
-                "voice": selected_voice if audio_wav_b64 else None,
                 "provider": f"dashscope-compatible/{model_id}",
                 "model": model_id,
+                "voice": selected_voice if audio_wav_b64 or audio_url else None,
             }
         except Exception as exc:
             logger.error("Omni chat failed: %s", exc)
@@ -373,7 +405,84 @@ class VoiceService:
             lower_message = message.lower()
             if "access_denied" in lower_message or "access denied" in lower_message:
                 message = f"当前 DashScope 账号尚未开通 {model_id} 调用权限，请先在阿里云百炼控制台开通模型后再试。"
-            return {"ok": False, "text": "", "error": message}
+            yield {
+                "type": "error",
+                "ok": False,
+                "error": message,
+            }
+
+    def omni_chat(
+        self,
+        audio_bytes: bytes,
+        *,
+        prompt: str = "请先理解我的语音，再结合已有的健康监测数据，用自然、温和、好懂的话给出简短回答。",
+        fmt: str = "wav",
+        device_mac: str | None = None,
+        role: str = "elder",
+    ) -> dict[str, object]:
+        """Return the legacy aggregated Omni response using the streaming implementation."""
+        answer_parts: list[str] = []
+        completed_answer = ""
+        provider: str | None = None
+        model: str | None = None
+        voice: str | None = None
+        audio_b64 = ""
+        audio_pcm_b64 = ""
+        audio_url = ""
+        audio_sample_rate: int | None = None
+        audio_format: str | None = None
+
+        for event in self.omni_chat_stream(
+            audio_bytes,
+            prompt=prompt,
+            fmt=fmt,
+            device_mac=device_mac,
+            role=role,
+        ):
+            event_type = str(event.get("type") or "")
+            if event_type == "answer.delta":
+                answer_parts.append(str(event.get("delta") or ""))
+                continue
+            if event_type == "audio.completed":
+                audio_b64 = str(event.get("audio_b64") or "")
+                audio_pcm_b64 = str(event.get("audio_pcm_b64") or "")
+                audio_url = str(event.get("audio_url") or "")
+                audio_sample_rate_value = event.get("audio_sample_rate")
+                audio_sample_rate = (
+                    int(audio_sample_rate_value)
+                    if isinstance(audio_sample_rate_value, int)
+                    else None
+                )
+                audio_format = str(event.get("fmt") or "") or None
+                voice = str(event.get("voice") or "") or None
+                continue
+            if event_type == "answer.completed":
+                completed_answer = str(event.get("answer") or "")
+                provider = str(event.get("provider") or "") or None
+                model = str(event.get("model") or "") or None
+                voice = str(event.get("voice") or "") or voice
+                continue
+            if event_type == "error":
+                return {
+                    "ok": False,
+                    "text": "",
+                    "error": str(event.get("error") or "Omni analysis failed"),
+                }
+
+        answer_text = completed_answer or "".join(answer_parts).strip()
+        return {
+            "ok": True,
+            "text": answer_text,
+            "answer": answer_text,
+            "audio_b64": audio_b64,
+            "audio_pcm_b64": audio_pcm_b64,
+            "audio_url": audio_url,
+            "audio_sample_rate": audio_sample_rate,
+            "fmt": audio_format,
+            "voice": voice,
+            "provider": provider,
+            "model": model,
+        }
 
     def synthesize(
         self,
