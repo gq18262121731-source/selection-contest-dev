@@ -1,0 +1,351 @@
+{
+  "source": "Kine2Go Go2-retargeted AI4Animation dog_walk00 trajectory",
+  "source_motion": "C:\\Users\\13010\\Downloads\\kine2go-pipeline-master\\motion_retargeting\\results\\dog_walk00_joint_pos.npy",
+  "source_frames": [
+    402,
+    443
+  ],
+  "walk_output_frames": 42,
+  "fps": 60,
+  "mapping": {
+    "FR_hip": 7,
+    "FR_thigh": 11,
+    "FR_calf": 15,
+    "FL_hip": 6,
+    "FL_thigh": 10,
+    "FL_calf": 14,
+    "RR_hip": 9,
+    "RR_thigh": 13,
+    "RR_calf": 17,
+    "RL_hip": 8,
+    "RL_thigh": 12,
+    "RL_calf": 16
+  },
+  "zero_model": "Blender local rotation = source absolute q",
+  "signs": {
+    "FR_hip": 1.0,
+    "FR_thigh": 1.0,
+    "FR_calf": 1.0,
+    "FL_hip": 1.0,
+    "FL_thigh": 1.0,
+    "FL_calf": 1.0,
+    "RR_hip": 1.0,
+    "RR_thigh": 1.0,
+    "RR_calf": 1.0,
+    "RL_hip": 1.0,
+    "RL_thigh": 1.0,
+    "RL_calf": 1.0
+  },
+  "idle_pose": "Kine2Go RobotConfig legal static standing pose",
+  "WALK_ACTION": "PASS",
+  "IDLE_ACTION": "PASS",
+  "WALK_LOOP": "PASS",
+  "loop_metrics": {
+    "pose_seam_rms_rad": 0.0,
+    "velocity_seam_rms_rad_per_frame": 0.007533283346942191,
+    "body_seam_rms": 0.0,
+    "blend_frames": 6
+  },
+  "JOINT_LIMIT": "PASS",
+  "walk_joint_limits": {
+    "FR_hip": {
+      "status": "PASS",
+      "min_rad": -0.09920106828212738,
+      "max_rad": 0.05315063148736954,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FR_thigh": {
+      "status": "PASS",
+      "min_rad": 0.16340601444244385,
+      "max_rad": 1.1207128763198853,
+      "lower_rad": -1.5708,
+      "upper_rad": 3.4907,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FR_calf": {
+      "status": "PASS",
+      "min_rad": -1.7473886013031006,
+      "max_rad": -1.1787899732589722,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FL_hip": {
+      "status": "PASS",
+      "min_rad": -0.2218037247657776,
+      "max_rad": 0.016871636733412743,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FL_thigh": {
+      "status": "PASS",
+      "min_rad": 0.11505317687988281,
+      "max_rad": 1.033708095550537,
+      "lower_rad": -1.5708,
+      "upper_rad": 3.4907,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FL_calf": {
+      "status": "PASS",
+      "min_rad": -1.8227505683898926,
+      "max_rad": -1.261085033416748,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RR_hip": {
+      "status": "PASS",
+      "min_rad": 0.03934071958065033,
+      "max_rad": 0.21390829980373383,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RR_thigh": {
+      "status": "PASS",
+      "min_rad": 0.34834858775138855,
+      "max_rad": 1.4070115089416504,
+      "lower_rad": -0.5236,
+      "upper_rad": 4.5379,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RR_calf": {
+      "status": "PASS",
+      "min_rad": -1.758557677268982,
+      "max_rad": -1.3965330123901367,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RL_hip": {
+      "status": "PASS",
+      "min_rad": -0.044742222875356674,
+      "max_rad": 0.04088946804404259,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RL_thigh": {
+      "status": "PASS",
+      "min_rad": 0.2972940504550934,
+      "max_rad": 1.2534652948379517,
+      "lower_rad": -0.5236,
+      "upper_rad": 4.5379,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RL_calf": {
+      "status": "PASS",
+      "min_rad": -1.728593111038208,
+      "max_rad": -1.4058732986450195,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    }
+  },
+  "idle_joint_limits": {
+    "FR_hip": {
+      "status": "PASS",
+      "min_rad": 0.0,
+      "max_rad": 0.0,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FR_thigh": {
+      "status": "PASS",
+      "min_rad": 0.8,
+      "max_rad": 0.8,
+      "lower_rad": -1.5708,
+      "upper_rad": 3.4907,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FR_calf": {
+      "status": "PASS",
+      "min_rad": -1.5,
+      "max_rad": -1.5,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FL_hip": {
+      "status": "PASS",
+      "min_rad": 0.0,
+      "max_rad": 0.0,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FL_thigh": {
+      "status": "PASS",
+      "min_rad": 0.8,
+      "max_rad": 0.8,
+      "lower_rad": -1.5708,
+      "upper_rad": 3.4907,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "FL_calf": {
+      "status": "PASS",
+      "min_rad": -1.5,
+      "max_rad": -1.5,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RR_hip": {
+      "status": "PASS",
+      "min_rad": 0.0,
+      "max_rad": 0.0,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RR_thigh": {
+      "status": "PASS",
+      "min_rad": 1.0,
+      "max_rad": 1.0,
+      "lower_rad": -0.5236,
+      "upper_rad": 4.5379,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RR_calf": {
+      "status": "PASS",
+      "min_rad": -1.5,
+      "max_rad": -1.5,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RL_hip": {
+      "status": "PASS",
+      "min_rad": 0.0,
+      "max_rad": 0.0,
+      "lower_rad": -1.0472,
+      "upper_rad": 1.0472,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RL_thigh": {
+      "status": "PASS",
+      "min_rad": 1.0,
+      "max_rad": 1.0,
+      "lower_rad": -0.5236,
+      "upper_rad": 4.5379,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    },
+    "RL_calf": {
+      "status": "PASS",
+      "min_rad": -1.5,
+      "max_rad": -1.5,
+      "lower_rad": -2.7227,
+      "upper_rad": -0.83776,
+      "violation_count": 0,
+      "first_violation_output_frame": null
+    }
+  },
+  "foot_plane_analysis": {
+    "ground_z": -0.3652920126914978,
+    "max_origin_penetration_m": 0.02699229121208191,
+    "contact_frames_per_leg_10mm": {
+      "FR": 0,
+      "FL": 11,
+      "RR": 0,
+      "RL": 11
+    },
+    "foot_origin_z_min": [
+      -0.30809277296066284,
+      -0.3922843039035797,
+      -0.2950915992259979,
+      -0.38564950227737427
+    ],
+    "foot_origin_z_max": [
+      -0.2626586854457855,
+      -0.2291334867477417,
+      -0.21805813908576965,
+      -0.29149550199508667
+    ]
+  },
+  "FOOT_CONTACT_VISUAL": "PASS",
+  "MESH_COLLISION_VISUAL": "PASS",
+  "BLENDER_EXPORT": "PASS",
+  "output_blend": "C:\\Users\\13010\\Downloads\\Go2_kine2go_final_v1.blend",
+  "GLB_EXPORT": "PASS",
+  "output_glb": "C:\\Users\\13010\\Downloads\\go2_mobile_kine2go_v1.glb",
+  "GLB_ANIMATIONS": "PASS",
+  "glb": {
+    "animations": [
+      {
+        "name": "Idle",
+        "channels": 14,
+        "samplers": 14
+      },
+      {
+        "name": "Walk",
+        "channels": 14,
+        "samplers": 14
+      }
+    ],
+    "mesh_count": 26,
+    "material_count": 3,
+    "skin_count": 0,
+    "node_count": 114
+  },
+  "READY_FOR_FLUTTER": "PASS",
+  "preview": {
+    "stills": {
+      "front": "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_front.png",
+      "side": "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_side.png",
+      "three_quarter": "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_three_quarter.png"
+    },
+    "phase_stills": [
+      "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_phase_0.png",
+      "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_phase_1.png",
+      "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_phase_2.png",
+      "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_phase_3.png"
+    ],
+    "video": "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_walk_preview.mp4",
+    "video_contact_sheet": "D:\\guosai\\reports\\go2_kine2go_preview\\go2_kine2go_video_contact_sheet.png",
+    "duration_s": 5.0
+  },
+  "visual_qa": {
+    "reviewed_combined_phase_offsets": [0, 10, 20, 30],
+    "reviewed_isolated_legs": ["FL", "FR", "RL", "RR"],
+    "isolated_samples_per_leg": 8,
+    "isolated_sample_frames": [101, 106, 111, 116, 121, 126, 131, 136],
+    "video_frame_count": 300,
+    "video_fps": 60.0,
+    "cycle_period_frames": 41,
+    "seam_window_mean_abs_pixel_diff_min": 1.4080859422683716,
+    "seam_window_mean_abs_pixel_diff_max": 2.5156335830688477,
+    "findings": [
+      "All four rigid link chains remain connected throughout the sampled cycle.",
+      "The reported detached joint was caused by far-side thigh occlusion in the previous camera view, not an FK or mesh-parenting fault.",
+      "The final preview uses the opposite three-quarter view to keep the parent links visible.",
+      "No joint offset, FK hierarchy, source trajectory, Blender asset, or GLB animation was altered for this visual correction."
+    ]
+  }
+}
