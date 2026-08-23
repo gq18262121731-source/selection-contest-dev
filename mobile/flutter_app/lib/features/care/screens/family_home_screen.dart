@@ -14,6 +14,7 @@ import 'family_video_screen.dart';
 import '../models/care_profile_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/care_provider.dart';
+import '../../robot/pages/robot_detail_page.dart';
 
 class FamilySubjectCardViewModel {
   final String elderId;
@@ -275,6 +276,8 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         ...subjects.map(_buildSubjectCard),
         const SizedBox(height: 16),
         _buildVideoEntry(context),
+        const SizedBox(height: 16),
+        _buildRobotEntry(context, availableDevices),
         const SizedBox(height: 16),
         _buildVoiceEntry(context),
         const SizedBox(height: 24),
@@ -594,6 +597,84 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
             ),
             Icon(Icons.chevron_right, color: AppColors.textMuted),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRobotEntry(
+    BuildContext context,
+    List<CareAccessDeviceMetric> availableDevices,
+  ) {
+    final metric = availableDevices.isNotEmpty ? availableDevices.first : null;
+    return InkWell(
+      onTap: metric == null
+          ? null
+          : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => RobotDetailPage(
+                    subjectName: metric.subjectName,
+                    deviceMac: metric.deviceMac,
+                  ),
+                ),
+              );
+            },
+      borderRadius: BorderRadius.circular(16),
+      child: Opacity(
+        opacity: metric == null ? 0.62 : 1,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.smart_toy_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '小康 Go2 数字分身',
+                      style: TextStyle(
+                        color: AppColors.textMain,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      metric == null
+                          ? '关联监护对象后查看机器人陪伴与安全状态'
+                          : '查看陪伴任务、机器人状态和安全监护',
+                      style: const TextStyle(
+                        color: AppColors.textSub,
+                        fontSize: 15,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            ],
+          ),
         ),
       ),
     );
