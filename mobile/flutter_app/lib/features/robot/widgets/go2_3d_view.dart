@@ -10,6 +10,7 @@ class Go2ThreeDView extends StatefulWidget {
   final RobotMode mode;
   final bool enableTouch;
   final bool showLoading;
+  final bool transparentBackground;
   final VoidCallback? onLoaded;
   final ValueChanged<String>? onError;
 
@@ -18,6 +19,7 @@ class Go2ThreeDView extends StatefulWidget {
     required this.mode,
     this.enableTouch = true,
     this.showLoading = true,
+    this.transparentBackground = false,
     this.onLoaded,
     this.onError,
   });
@@ -104,12 +106,15 @@ class _Go2ThreeDViewState extends State<Go2ThreeDView> {
 
   @override
   Widget build(BuildContext context) {
+    final hasTransparentBackground = widget.transparentBackground;
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.all(Radius.circular(24)),
-      ),
-      clipBehavior: Clip.antiAlias,
+      decoration: hasTransparentBackground
+          ? null
+          : const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.all(Radius.circular(24)),
+            ),
+      clipBehavior: hasTransparentBackground ? Clip.none : Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -122,9 +127,16 @@ class _Go2ThreeDViewState extends State<Go2ThreeDView> {
             ),
           if (_checkingAsset ||
               (widget.showLoading && !_loaded && _errorMessage == null))
-            _LoadingOverlay(progress: _progress),
+            _LoadingOverlay(
+              progress: _progress,
+              transparentBackground: hasTransparentBackground,
+            ),
           if (_errorMessage != null)
-            _ModelError(message: _errorMessage!, onRetry: _checkAsset),
+            _ModelError(
+              message: _errorMessage!,
+              onRetry: _checkAsset,
+              transparentBackground: hasTransparentBackground,
+            ),
         ],
       ),
     );
@@ -133,14 +145,18 @@ class _Go2ThreeDViewState extends State<Go2ThreeDView> {
 
 class _LoadingOverlay extends StatelessWidget {
   final double progress;
+  final bool transparentBackground;
 
-  const _LoadingOverlay({required this.progress});
+  const _LoadingOverlay({
+    required this.progress,
+    required this.transparentBackground,
+  });
 
   @override
   Widget build(BuildContext context) {
     final percent = (progress * 100).round().clamp(0, 100);
     return ColoredBox(
-      color: AppColors.surface,
+      color: transparentBackground ? Colors.transparent : AppColors.surface,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -172,13 +188,18 @@ class _LoadingOverlay extends StatelessWidget {
 class _ModelError extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
+  final bool transparentBackground;
 
-  const _ModelError({required this.message, required this.onRetry});
+  const _ModelError({
+    required this.message,
+    required this.onRetry,
+    required this.transparentBackground,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppColors.surface,
+      color: transparentBackground ? Colors.transparent : AppColors.surface,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

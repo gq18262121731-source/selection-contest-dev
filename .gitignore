@@ -41,6 +41,8 @@ weights/
 tmp_knowledge_test/
 omni_test/
 .omni_test/
+.pub-cache/
+.dart-appdata/
 backend/tmp_x.txt
 *.tmp
 *.bak

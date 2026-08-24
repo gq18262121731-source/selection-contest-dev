@@ -55,7 +55,11 @@ class _RobotDetailView extends StatelessWidget {
           const SizedBox(height: 14),
           SizedBox(
             height: 320,
-            child: Go2ThreeDView(mode: status.mode, onError: (_) {}),
+            child: Go2ThreeDView(
+              mode: status.mode,
+              transparentBackground: true,
+              onError: (_) {},
+            ),
           ),
           const SizedBox(height: 14),
           const Text(
